@@ -34,5 +34,5 @@ end
 ActionMailer::Base.delivery_method = :test
 
 # load the code-to-be-tested
-Dependencies.load_paths << File.dirname(__FILE__) + '/../lib' # for ActiveSupport autoloading
+ActiveSupport::Dependencies.load_paths << File.dirname(__FILE__) + '/../lib' # for ActiveSupport autoloading
 require File.dirname(__FILE__) + '/../init'
