@@ -36,8 +36,13 @@ module Freemium
     # What plan to assign to subscriptions that have expired. May be nil.
     attr_writer :expired_plan
     def expired_plan
-      @expired_plan ||= SubscriptionPlan.find(:first, :conditions => "rate_cents = 0")
+      unless @expired_plan 
+        @expired_plan = expired_plan_key ? SubscriptionPlan.find_by_key(expired_plan_key.to_s) : SubscriptionPlan.find(:first, :conditions => "rate_cents = 0")
+      end
+      @expired_plan
     end
+
+    attr_accessor :expired_plan_key
 
     # If you want to receive admin reports, enter an email (or list of emails) here.
     # These will be bcc'd on all SubscriptionMailer emails, and will also receive the
