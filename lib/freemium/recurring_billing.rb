@@ -40,7 +40,7 @@ module Freemium
       def process_new_transactions
         transaction do
           new_transactions.each do |t|
-            subscription = Subscription.find_by_billing_key(t.billing_key)
+            subscription = ::Subscription.find_by_billing_key(t.billing_key)
             Freemium.activity_log[subscription] << t if Freemium.log?
             t.success? ? subscription.receive_payment!(t.amount) : subscription.expire_after_grace!
           end
@@ -51,7 +51,8 @@ module Freemium
       def find_expirable
         find(
           :all,
-          :conditions => ['rate_cents > 0 AND paid_through < ? AND (expire_on IS NULL OR expire_on < paid_through)', Date.today]
+          :include => [:subscription_plan],
+          :conditions => ['subscription_plans.rate_cents > 0 AND paid_through < ? AND (expire_on IS NULL OR expire_on < paid_through)', Date.today]
         )
       end
     end

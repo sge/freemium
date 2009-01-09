@@ -10,30 +10,32 @@ module Freemium
     
     def self.included(base)
       base.class_eval do
-        include Freemium::Priced
-        
         belongs_to :subscription_plan
         belongs_to :subscribable, :polymorphic => true
-
+              
         before_validation :set_paid_through
         after_destroy :cancel_in_remote_system
 
         validates_presence_of :subscribable
         validates_presence_of :subscription_plan
-        validates_presence_of :paid_through
+        validates_presence_of :paid_through 
       end
+      base.extend ClassMethods
     end
-
-    def complimentary?
-      !self.paid? and self.subscription_plan.paid?
+    
+    module ClassMethods
+      # expires all subscriptions that have been pastdue for too long (accounting for grace)
+      def expire
+        find(:all, :conditions => ['expire_on >= paid_through AND expire_on <= ?', Date.today]).each(&:expire!)
+      end      
     end
-
-    def discounted?
-      self.rate_cents != self.subscription_plan.rate_cents
+    
+    def rate
+      subscription_plan.rate
     end
 
     def credit_card_on_file?
-      !self.billing_key.blank?
+      !billing_key.blank?
     end
 
     ##
@@ -59,7 +61,7 @@ module Freemium
     # returns the value of the time between now and paid_through.
     # will optionally interpret the time according to a certain subscription plan.
     def remaining_value(subscription_plan_id = self.subscription_plan_id)
-      SubscriptionPlan.find(subscription_plan_id).daily_rate * remaining_days
+      ::SubscriptionPlan.find(subscription_plan_id).daily_rate * remaining_days
     end
 
     # if paid through today, returns zero
@@ -83,11 +85,6 @@ module Freemium
     ##
     ## Expiration
     ##
-
-    # expires all subscriptions that have been pastdue for too long (accounting for grace)
-    def self.expire
-      find(:all, :conditions => ['expire_on >= paid_through AND expire_on <= ?', Date.today]).each(&:expire!)
-    end
 
     # sets the expiration for the subscription based on today and the configured grace period.
     def expire_after_grace!
@@ -143,8 +140,7 @@ module Freemium
     # subscription plan's rate to be very much an edge case.
     def receive_payment(value)
       self.paid_through = if value.cents % subscription_plan.rate.cents == 0
-        months_per_multiple = subscription_plan.yearly? ? 12 : 1
-        self.paid_through >> months_per_multiple * value.cents / subscription_plan.rate.cents
+        self.paid_through >> value.cents / subscription_plan.rate.cents
       else
         # edge case
         self.paid_through + (value.cents / subscription_plan.daily_rate.cents)

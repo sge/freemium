@@ -20,9 +20,6 @@ $stdout = File.open('/dev/null', 'w')
 load(File.dirname(__FILE__) + "/db/schema.rb")
 $stdout = STDOUT
 
-# load the ActiveRecord models
-require File.dirname(__FILE__) + '/db/models'
-
 # configure the TestCase settings
 class Test::Unit::TestCase
   self.use_transactional_fixtures = true
@@ -36,3 +33,6 @@ ActionMailer::Base.delivery_method = :test
 # load the code-to-be-tested
 ActiveSupport::Dependencies.load_paths << File.dirname(__FILE__) + '/../lib' # for ActiveSupport autoloading
 require File.dirname(__FILE__) + '/../init'
+
+# load the ActiveRecord models
+require File.dirname(__FILE__) + '/db/models'

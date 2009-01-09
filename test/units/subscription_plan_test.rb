@@ -8,12 +8,7 @@ class SubscriptionPlanTest < Test::Unit::TestCase
   end
 
   def test_rate_intervals
-    plan = SubscriptionPlan.new(:rate_cents => 36500, :yearly => true)
-    assert_equal Money.new(100), plan.daily_rate
-    assert_equal Money.new(3041), plan.monthly_rate
-    assert_equal Money.new(36500), plan.yearly_rate
-
-    plan = SubscriptionPlan.new(:rate_cents => 3041, :yearly => false)
+    plan = SubscriptionPlan.new(:rate_cents => 3041)
     assert_equal Money.new(99), plan.daily_rate
     assert_equal Money.new(3041), plan.monthly_rate
     assert_equal Money.new(36492), plan.yearly_rate
@@ -37,8 +32,7 @@ class SubscriptionPlanTest < Test::Unit::TestCase
   def create_plan(options = {})
     SubscriptionPlan.create({
       :name => 'super-duper-ultra-premium',
-      :rate_cents => 99995,
-      :yearly => false
+      :rate_cents => 99995
     }.merge(options))
   end
 end

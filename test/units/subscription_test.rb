@@ -160,7 +160,7 @@ class SubscriptionTest < Test::Unit::TestCase
   end
 
   def test_updating_a_credit_card
-    subscription = Subscription.find(:first, :conditions => "billing_key IS NOT NULL")
+    subscription = ::Subscription.find(:first, :conditions => "billing_key IS NOT NULL")
     cc = Freemium::CreditCard.new
     response = Freemium::Response.new(true)
     response.billing_key = "new code"
