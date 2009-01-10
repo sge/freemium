@@ -15,6 +15,7 @@ module Freemium
         belongs_to :credit_card, :dependent => :destroy
               
         before_validation :set_paid_through
+        before_validation :set_started_on
         before_save :store_credit_card_offsite
         before_save :reset_paid_through_if_plan_changed
         before_save :discard_credit_card_unless_paid
@@ -27,6 +28,7 @@ module Freemium
         validates_presence_of :subscription_plan
         
         validates_presence_of :paid_through 
+        validates_presence_of :started_on
         
         validates_presence_of :credit_card, :if => :paid?
         validates_associated :credit_card, :if => :paid?
@@ -43,6 +45,10 @@ module Freemium
     def set_paid_through
       self.paid_through ||= Date.today
     end    
+
+    def set_started_on
+      self.started_on = Date.today if started_on.nil? || subscription_plan_id_changed?
+    end
     
     def reset_paid_through_if_plan_changed
       # no prorations or trial periods when changing plans

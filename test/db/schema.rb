@@ -20,6 +20,7 @@ ActiveRecord::Schema.define(:version => 1) do
     t.column :paid_through, :date
     t.column :expire_on, :date, :null => true
     t.column :billing_key, :string, :null => true
+    t.column :started_on, :date, :null => true
     t.column :last_transaction_at, :datetime, :null => true
   end
   

@@ -24,6 +24,7 @@ class SubscriptionTest < Test::Unit::TestCase
     subscription = build_subscription
     subscription.save!
     assert !subscription.new_record?, subscription.errors.full_messages.to_sentence
+    assert_equal Date.today, subscription.reload.started_on
   end
 
   def test_missing_fields
@@ -107,6 +108,7 @@ class SubscriptionTest < Test::Unit::TestCase
     assert_equal subscription_plans(:basic), subscriptions(:bobs_subscription).subscription_plan
     Subscription.expire
     assert_equal subscription_plans(:free), subscriptions(:bobs_subscription).reload.subscription_plan
+    assert_equal Date.today, subscriptions(:bobs_subscription).reload.started_on
     assert ActionMailer::Base.deliveries.size > 0
   end
 
