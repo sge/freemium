@@ -23,6 +23,10 @@ module Freemium
       end
     end
     
+    def features
+      Freemium::FeatureSet.find(self.feature_set_id)
+    end
+    
     # returns the daily cost of this plan.
     def daily_rate
       yearly_rate / 365

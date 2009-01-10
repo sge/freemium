@@ -8,6 +8,7 @@ ActiveRecord::Schema.define(:version => 1) do
     t.column :name, :string, :null => false
     t.column :key, :string, :null => false
     t.column :rate_cents, :integer, :null => false
+    t.column :feature_set_id, :string, :null => false
   end
 
   create_table :subscriptions, :force => true do |t|

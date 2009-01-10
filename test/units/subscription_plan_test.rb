@@ -26,13 +26,22 @@ class SubscriptionPlanTest < Test::Unit::TestCase
       assert plan.errors.on(field)
     end
   end
+  
+  ##
+  ## Feature sets
+  ##
+
+  def test_free_has_ads
+    assert subscription_plans(:free).features.ads?
+  end
 
   protected
 
   def create_plan(options = {})
     SubscriptionPlan.create({
       :name => 'super-duper-ultra-premium',
-      :rate_cents => 99995
+      :rate_cents => 99995,
+      :feature_set_id => :premium
     }.merge(options))
   end
 end

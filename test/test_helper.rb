@@ -55,3 +55,5 @@ class CreditCard
     new(example_params)
   end
 end
+
+Freemium::FeatureSet.config_file = File.dirname(__FILE__) + '/feature_sets.yml'
