@@ -36,3 +36,22 @@ require File.dirname(__FILE__) + '/../init'
 
 # load the ActiveRecord models
 require File.dirname(__FILE__) + '/db/models'
+
+# some test credit_card params
+class CreditCard
+  def self.example_params
+    {
+      :first_name => "Santa",
+      :last_name => "Claus",
+      :card_type => "visa",
+      :number => "4111111111111111",
+      :month => 10,
+      :year => 2010,
+      :verification_value => 999
+    }
+  end
+  
+  def self.example
+    new(example_params)
+  end
+end

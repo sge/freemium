@@ -1,7 +1,7 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
 class SubscriptionTest < Test::Unit::TestCase
-  fixtures :users, :subscriptions, :subscription_plans
+  fixtures :users, :subscriptions, :subscription_plans, :credit_cards
 
   def test_associations
     assert_equal users(:bob), subscriptions(:bobs_subscription).subscribable
@@ -21,13 +21,15 @@ class SubscriptionTest < Test::Unit::TestCase
   ##
 
   def test_creating_subscription
-    subscription = create_subscription
+    subscription = build_subscription
+    subscription.save!
     assert !subscription.new_record?, subscription.errors.full_messages.to_sentence
   end
 
   def test_missing_fields
     [:subscription_plan, :subscribable].each do |field|
-      subscription = create_subscription(field => nil)
+      subscription = build_subscription(field => nil)
+      subscription.save
       assert subscription.new_record?
       assert subscription.errors.on(field)
     end
@@ -65,27 +67,46 @@ class SubscriptionTest < Test::Unit::TestCase
   end
 
   ##
+  ## Requiring Credit Cards ...
+  ##
+
+  def test_requiring_credit_card_for_pay_plan
+    subscription = build_subscription(:subscription_plan => subscription_plans(:premium))
+    subscription.stubs(:credit_card).returns(nil)
+    subscription.valid?
+    assert subscription.errors.on(:credit_card)
+  end
+
+  def test_requiring_credit_card_for_free_plan
+    subscription = build_subscription
+    subscription.expects(:credit_card).never
+    subscription.valid?
+    assert !subscription.errors.on(:credit_card)
+  end
+
+  ##
   ## Expiration
   ##
 
   def test_instance_expire
-    Freemium.expired_plan = subscription_plans(:free)
+    Freemium.expired_plan_key = :free
     Freemium.gateway.expects(:cancel).once.returns(nil)
     ActionMailer::Base.deliveries = []
     subscriptions(:bobs_subscription).expire!
 
     assert_equal 1, ActionMailer::Base.deliveries.size, "notice is sent to user"
     assert_equal subscription_plans(:free), subscriptions(:bobs_subscription).subscription_plan, "subscription is downgraded to free"
+    assert_nil subscriptions(:bobs_subscription).billing_key, "billing key is thrown away"
     assert_nil subscriptions(:bobs_subscription).reload.billing_key, "billing key is thrown away"
   end
 
   def test_class_expire
-    Freemium.expired_plan = subscription_plans(:free)
-    subscription = create_subscription(:paid_through => Date.today - 4, :expire_on => Date.today)
+    Freemium.expired_plan_key = :free
+    subscriptions(:bobs_subscription).update_attributes(:paid_through => Date.today - 4, :expire_on => Date.today)
     ActionMailer::Base.deliveries = []
-    assert_equal subscription_plans(:basic), subscription.subscription_plan
+    assert_equal subscription_plans(:basic), subscriptions(:bobs_subscription).subscription_plan
     Subscription.expire
-    assert_equal subscription_plans(:free), subscription.reload.subscription_plan
+    assert_equal subscription_plans(:free), subscriptions(:bobs_subscription).reload.subscription_plan
     assert ActionMailer::Base.deliveries.size > 0
   end
 
@@ -148,44 +169,62 @@ class SubscriptionTest < Test::Unit::TestCase
   ## The Subscription#credit_card= shortcut
   ##
   def test_adding_a_credit_card
-    subscription = Subscription.new
-    cc = Freemium::CreditCard.new
+    subscription = build_subscription(:subscription_plan => subscription_plans(:premium))
+    cc = CreditCard.example
     response = Freemium::Response.new(true)
     response.billing_key = "alphabravo"
     Freemium.gateway.expects(:store).with(cc).returns(response)
 
-    assert_nothing_raised do subscription.credit_card = cc end
+    subscription.credit_card = cc
+    assert_nothing_raised do subscription.save! end
     assert_equal "alphabravo", subscription.billing_key
-    assert subscription.new_record?
   end
 
   def test_updating_a_credit_card
     subscription = ::Subscription.find(:first, :conditions => "billing_key IS NOT NULL")
-    cc = Freemium::CreditCard.new
+    cc = CreditCard.example
     response = Freemium::Response.new(true)
     response.billing_key = "new code"
     Freemium.gateway.expects(:update).with(subscription.billing_key, cc).returns(response)
 
-    assert_nothing_raised do subscription.credit_card = cc end
+    subscription.credit_card = cc
+    assert_nothing_raised do subscription.save! end
     assert_equal "new code", subscription.billing_key, "catches any change to the billing key"
-    assert subscription.reload.billing_key != "new code", "change was not saved"
   end
+  
+  def test_updating_an_expired_credit_card
+    subscription = ::Subscription.find(:first, :conditions => "billing_key IS NOT NULL")    
+    cc = CreditCard.example
+    response = Freemium::Response.new(true)
+    Freemium.gateway.expects(:update).with(subscription.billing_key, cc).returns(response)
+
+    subscription.expire_on = Time.now
+    assert subscription.save
+    assert_not_nil subscription.reload.expire_on
+
+    subscription.credit_card = cc
+    assert_nothing_raised do subscription.save! end
+    assert_nil subscription.expire_on
+    assert_nil subscription.reload.expire_on
+  end  
 
   def test_failing_to_add_a_credit_card
-    subscription = Subscription.new
-    cc = Freemium::CreditCard.new
+    subscription = build_subscription(:subscription_plan => subscription_plans(:premium))
+    cc = CreditCard.example
     response = Freemium::Response.new(false)
     Freemium.gateway.expects(:store).returns(response)
-
-    assert_raises Freemium::CreditCardStorageError do subscription.credit_card = cc end
+    
+    subscription.credit_card = cc
+    assert_raises Freemium::CreditCardStorageError do subscription.save! end
   end
 
   protected
 
-  def create_subscription(options = {})
-    Subscription.create({
-      :subscription_plan => subscription_plans(:basic),
+  def build_subscription(options = {})
+    Subscription.new({
+      :subscription_plan => subscription_plans(:free),
       :subscribable => users(:sue)
-    }.merge(options))
+    }.merge(options))    
   end
+  
 end

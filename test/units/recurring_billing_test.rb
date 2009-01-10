@@ -1,7 +1,11 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
 class RecurringBillingTest < Test::Unit::TestCase
-  fixtures :users, :subscriptions, :subscription_plans
+  fixtures :users, :subscriptions, :subscription_plans, :credit_cards
+
+  def setup
+    Freemium.gateway = Freemium::Gateways::Test.new
+  end
 
   class Subscription < ::Subscription
     include Freemium::RecurringBilling
@@ -39,12 +43,23 @@ class RecurringBillingTest < Test::Unit::TestCase
     subscription = subscriptions(:bobs_subscription)
     paid_through = subscription.paid_through
     t = Freemium::Transaction.new(:billing_key => subscription.billing_key, :amount => subscription.subscription_plan.rate, :success => true)
-    Subscription.stubs(:new_transactions).returns([t, t])
+    Subscription.stubs(:new_transactions).returns([t])
 
     # the actual test
     Subscription.send :process_new_transactions
-    assert_equal (paid_through >> 2).to_s, subscription.reload.paid_through.to_s, "extended by two months"
+    assert_equal (paid_through + 1.month).to_s, subscription.reload.paid_through.to_s, "extended by two months"
   end
+  
+  def test_processing_new_transactions_multiple_months
+    subscription = subscriptions(:bobs_subscription)
+    paid_through = subscription.paid_through = Date.parse("2009-01-31 00:00:00")
+    t = Freemium::Transaction.new(:billing_key => subscription.billing_key, :amount => subscription.subscription_plan.rate, :success => true)
+    Subscription.stubs(:new_transactions).returns([t,t])
+
+    # the actual test
+    Subscription.send :process_new_transactions
+    assert_equal (paid_through + 2.months).to_s, subscription.reload.paid_through.to_s, "extended by two months"
+  end  
 
   def test_processing_a_failed_transaction
     subscription = subscriptions(:bobs_subscription)
