@@ -18,10 +18,9 @@ module Freemium
         before_validation :set_paid_through
         before_validation :set_started_on
         before_save :store_credit_card_offsite
-        before_save :reset_paid_through_if_plan_changed
         before_save :discard_credit_card_unless_paid
         before_destroy :cancel_in_remote_system
-        after_save :deactivate_coupons_if_plan_changed
+        before_save :deactivate_coupons_if_plan_changed
            
         validates_presence_of :subscribable
         validates_associated :subscribable
@@ -29,7 +28,7 @@ module Freemium
         validates_associated :subscription_plan
         validates_presence_of :subscription_plan
         
-        validates_presence_of :paid_through 
+        validates_presence_of :paid_through, :if => :paid? 
         validates_presence_of :started_on
         
         validates_presence_of :credit_card, :if => :paid?
@@ -45,18 +44,21 @@ module Freemium
     protected
 
     def set_paid_through
-      self.paid_through ||= Date.today
+      # TODO add in trial period handling
+      # no prorations or trial periods when changing plans
+      if subscription_plan_id_changed? && !paid_through_changed?
+        if paid?
+          self.paid_through = Date.today
+        else
+          self.paid_through = nil
+        end
+      end
     end    
 
     def set_started_on
       self.started_on = Date.today if subscription_plan_id_changed?
     end
-    
-    def reset_paid_through_if_plan_changed
-      # no prorations or trial periods when changing plans
-      self.paid_through = [Date.today, self.paid_through].min if subscription_plan_id_changed? and not new_record?
-    end
-    
+
     # Simple assignment of a credit card. Note that this may not be
     # useful for your particular situation, especially if you need
     # to simultaneously set up automated recurrences.
@@ -74,6 +76,7 @@ module Freemium
         raise Freemium::CreditCardStorageError.new(response.message) unless response.success?
         self.billing_key = response.billing_key
         self.expire_on = nil
+        self.credit_card.reload # to prevent needless subsequent store() calls
       end
     end
     
@@ -87,13 +90,13 @@ module Freemium
     def cancel_in_remote_system
       if billing_key
         Freemium.gateway.cancel(self.billing_key)
-        self.update_attribute :billing_key, nil
+        self.billing_key = nil
       end
     end
     
     # disable coupons when
     def deactivate_coupons_if_plan_changed
-      self.subscription_coupons.each{|c| c.destroy} if subscription_plan_id_changed? and not new_record?
+      self.subscription_coupons.each{|c| c.destroy} if subscription_plan_id_changed? && !new_record?
     end
     
     public
@@ -105,7 +108,7 @@ module Freemium
     module ClassMethods
       # expires all subscriptions that have been pastdue for too long (accounting for grace)
       def expire
-        find(:all, :conditions => ['expire_on >= paid_through AND expire_on <= ?', Date.today]).each(&:expire!)
+        find(:all, :conditions => ['expire_on >= paid_through AND expire_on <= ?', Date.today]).select{|s| s.paid?}.each(&:expire!)
       end      
     end
     
@@ -118,6 +121,10 @@ module Freemium
       rate = subscription_plan.rate
       rate = rate * (1 - self.coupon.discount_percentage.to_f/100) if coupon
       rate
+    end
+    
+    def coupon=(coupon)
+      self.subscription_coupons.build(:coupon => coupon)
     end
     
     def coupon

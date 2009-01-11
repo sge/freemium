@@ -17,7 +17,7 @@ ActiveRecord::Schema.define(:version => 1) do
     t.column :billing_key, :string, :null => true
     t.column :credit_card_id, :integer, :null => true
     t.column :subscription_plan_id, :integer, :null => false
-    t.column :paid_through, :date
+    t.column :paid_through, :date, :null => true
     t.column :expire_on, :date, :null => true
     t.column :billing_key, :string, :null => true
     t.column :started_on, :date, :null => true

@@ -8,7 +8,7 @@ module Freemium
         
         before_create :set_redeemed_on
         
-        validates_presence_of :coupon, :subscription
+        validates_presence_of :coupon
         validates_uniqueness_of :coupon_id, :scope => :subscription_id, :message => "has already been applied"   
       end
     end

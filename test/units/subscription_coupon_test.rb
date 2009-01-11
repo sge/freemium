@@ -90,12 +90,6 @@ class SubscriptionCouponTest < Test::Unit::TestCase
   ## Validation Tests
   ##
   
-  def test_invalid_no_subscription
-    s = SubscriptionCoupon.new(:coupon => @coupon)
-    assert !s.save
-    assert !s.errors.on(:subscription).empty?
-  end  
-
   def test_invalid_no_coupon
     s = SubscriptionCoupon.new(:subscription => subscriptions(:bobs_subscription))
     assert !s.save
