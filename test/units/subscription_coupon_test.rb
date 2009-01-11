@@ -52,8 +52,6 @@ class SubscriptionCouponTest < Test::Unit::TestCase
   end  
   
   def test_coupon_duration
-    @subscription.update_attribute :started_on, Date.today
-    
     assert @subscription.subscription_coupons.create(:coupon => @coupon)
     assert_equal (@original_price * 0.7).cents, @subscription.rate.cents
     

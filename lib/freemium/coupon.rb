@@ -6,6 +6,7 @@ module Freemium
         has_many :subscription_coupons, :dependent => :destroy
         
         validates_presence_of :description, :discount_percentage
+        validates_inclusion_of :discount_percentage, :in => 1..100
       end
     end
     
