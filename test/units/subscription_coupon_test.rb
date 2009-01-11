@@ -71,6 +71,13 @@ class SubscriptionCouponTest < Test::Unit::TestCase
     assert_equal @original_price.cents, @subscription.rate.cents
   end  
   
+  def test_apply_complimentary
+    @coupon.discount_percentage = 100
+    assert @subscription.subscription_coupons.create(:coupon => @coupon)
+    assert_equal 0, @subscription.rate.cents
+    assert !@subscription.paid?
+  end  
+  
   ##
   ## Validation Tests
   ##
