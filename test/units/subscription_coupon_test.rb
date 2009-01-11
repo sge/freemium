@@ -14,6 +14,15 @@ class SubscriptionCouponTest < Test::Unit::TestCase
     assert_equal (@original_price * 0.7).cents, @subscription.rate.cents
   end  
 
+  def test_apply_using_coupon_helper
+    @subscription = build_subscription(:coupon => @coupon, :credit_card => CreditCard.example)
+    @subscription.save!
+
+    assert_not_nil @subscription.coupon
+    assert !@subscription.subscription_coupons.empty?
+    assert_equal (@subscription.subscription_plan.rate * 0.7).cents, @subscription.rate.cents
+  end
+
   def test_apply_multiple
     @coupon = Coupon.new(:description => "10% off", :discount_percentage => 10)
     assert @subscription.subscription_coupons.create(:coupon => @coupon)
@@ -27,7 +36,6 @@ class SubscriptionCouponTest < Test::Unit::TestCase
     # Should use the highest discounted coupon
     assert_equal (@original_price * 0.7).cents, @subscription.rate.cents
   end  
-  
   
   def test_destroy
     assert @subscription.subscription_coupons.create(:coupon => @coupon)
@@ -130,5 +138,14 @@ class SubscriptionCouponTest < Test::Unit::TestCase
     assert !s.save
     assert !s.errors.on(:coupon).empty?    
   end
+
+  protected
+
+  def build_subscription(options = {})
+    Subscription.new({
+      :subscription_plan => subscription_plans(:basic),
+      :subscribable => users(:sue)
+    }.merge(options))    
+  end  
   
 end
