@@ -30,4 +30,20 @@ ActiveRecord::Schema.define(:version => 1) do
     t.column :expiration_date, :timestamp, :null => false
   end  
   
+  create_table :coupons, :force => true do |t|  
+    t.column :description, :string, :null => false
+    t.column :discount_percentage, :integer, :null => false 
+    t.column :redemption_limit, :integer, :null => true 
+    t.column :redemption_expiration, :date, :null => true
+    t.column :duration_in_months, :integer, :null => true
+    #    t.column :redemption_key, :string, :null => true
+  end
+  
+  create_table :subscription_coupons, :force => true do |t|  
+    t.column :subscription_id, :integer, :null => false
+    t.column :coupon_id, :integer, :null => false 
+    t.column :created_on, :datetime, :null => false 
+    t.column :deleted_at, :datetime, :null => true
+  end  
+  
 end

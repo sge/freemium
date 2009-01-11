@@ -3,3 +3,8 @@ bobs_credit_card:
   expiration_date: <%= (Time.now + 3.years).to_s :db %>
   display_number: xxxx-xxxx-xxxx-2222
   card_type: master
+steves_credit_card:
+  id: 2
+  expiration_date: <%= (Time.now + 3.years).to_s :db %>
+  display_number: xxxx-xxxx-xxxx-1111
+  card_type: visa  

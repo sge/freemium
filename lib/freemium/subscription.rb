@@ -13,6 +13,7 @@ module Freemium
         belongs_to :subscription_plan
         belongs_to :subscribable, :polymorphic => true
         belongs_to :credit_card, :dependent => :destroy
+        has_many :subscription_coupons, :conditions => "deleted_at IS NULL"
               
         before_validation :set_paid_through
         before_validation :set_started_on
@@ -20,6 +21,7 @@ module Freemium
         before_save :reset_paid_through_if_plan_changed
         before_save :discard_credit_card_unless_paid
         before_destroy :cancel_in_remote_system
+        after_save :deactivate_coupons_if_plan_changed
            
         validates_presence_of :subscribable
         validates_associated :subscribable
@@ -47,7 +49,7 @@ module Freemium
     end    
 
     def set_started_on
-      self.started_on = Date.today if started_on.nil? || subscription_plan_id_changed?
+      self.started_on = Date.today if subscription_plan_id_changed?
     end
     
     def reset_paid_through_if_plan_changed
@@ -89,6 +91,11 @@ module Freemium
       end
     end
     
+    # disable coupons when
+    def deactivate_coupons_if_plan_changed
+      self.subscription_coupons.each{|c| c.destroy} if subscription_plan_id_changed? and not new_record?
+    end
+    
     public
     
     ##
@@ -107,11 +114,22 @@ module Freemium
     ##
     
     def rate
-      subscription_plan ? subscription_plan.rate : 0
+      return nil unless subscription_plan
+      rate = subscription_plan.rate
+      rate = rate * (1 - self.coupon.discount_percentage.to_f/100) if coupon
+      rate
+    end
+    
+    def coupon
+      return nil if subscription_coupons.empty?
+      active_coupons = subscription_coupons.select{|c| c.active?}
+      return nil if active_coupons.empty?
+      active_coupons.sort_by{|c| c.coupon.discount_percentage }.reverse.first.coupon
     end
     
     def paid?
-      subscription_plan ? subscription_plan.rate_cents > 0 : false
+      return false unless rate
+      rate.cents > 0
     end
 
     ##

@@ -10,3 +10,7 @@ sally:
   id: 3
   name: Sally
   email: sally@example.com
+steve:
+  id: 4
+  name: Steve
+  email: steve@example.com

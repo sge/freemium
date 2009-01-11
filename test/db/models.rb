@@ -14,6 +14,10 @@ class CreditCard < ActiveRecord::Base
   include Freemium::CreditCard
 end
 
-#raise SubscriptionCreditCard.card_companies.inspect
+class Coupon < ActiveRecord::Base
+  include Freemium::Coupon
+end
 
-#raise (SubscriptionCreditCard.methods - ActiveRecord::Base.methods).sort.inspect
+class SubscriptionCoupon < ActiveRecord::Base
+  include Freemium::SubscriptionCoupon
+end

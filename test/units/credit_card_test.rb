@@ -3,7 +3,6 @@ require File.dirname(__FILE__) + '/../test_helper'
 class CreditCardTest < Test::Unit::TestCase
   fixtures :subscriptions, :credit_cards, :subscription_plans, :users
   
-  # TODO: DRY this up with the AccountsControllerTest
   def setup
     @first_card_params = CreditCard.example_params
     
