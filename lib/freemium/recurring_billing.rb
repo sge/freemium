@@ -48,12 +48,13 @@ module Freemium
       end
 
       # finds all subscriptions that should have paid but didn't and need to be expired
+      # because of coupons we can't trust rate_cents alone and need to verify that the account is indeed paid?
       def find_expirable
         find(
           :all,
           :include => [:subscription_plan],
           :conditions => ['subscription_plans.rate_cents > 0 AND paid_through < ? AND (expire_on IS NULL OR expire_on < paid_through)', Date.today]
-        )
+        ).select{|s| s.paid?}
       end
     end
   end

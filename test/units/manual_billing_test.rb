@@ -1,7 +1,7 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
 class ManualBillingTest < Test::Unit::TestCase
-  fixtures :users, :subscriptions, :subscription_plans
+  fixtures :users, :subscriptions, :subscription_plans, :credit_cards
 
   class Subscription < ::Subscription
     include Freemium::ManualBilling
@@ -13,14 +13,17 @@ class ManualBillingTest < Test::Unit::TestCase
     # making a one-off fixture set, basically
     create_billable_subscription # this subscription should be billable
     create_billable_subscription(:paid_through => Date.today) # this subscription should be billable
-    create_billable_subscription(:subscription_plan => subscription_plans(:free)) # shouldn't be billable because it's free
-    create_billable_subscription(:paid_through => Date.today + 1) # shouldn't be billable because it's paid far enough out
-    create_billable_subscription(:expire_on => Date.today + 1) # shouldn't be billable because it's already expiring
+    create_billable_subscription(:coupon => Coupon.create!(:description => "Complimentary", :discount_percentage => 100)) # should NOT be billable because it's free
+    create_billable_subscription(:subscription_plan => subscription_plans(:free)) # should NOT be billable because it's free
+    create_billable_subscription(:paid_through => Date.today + 1) # should NOT be billable because it's paid far enough out
+    s = create_billable_subscription # should NOT be billable because it's already expiring
+    s.update_attribute :expire_on, Date.today + 1
 
     expirable = Subscription.send(:find_billable)
-    assert expirable.all? {|subscription| subscription.subscription_plan.rate_cents > 0}, "free subscriptions aren't billable"
+    assert expirable.all? {|subscription| subscription.paid?}, "free subscriptions aren't billable"
     assert expirable.all? {|subscription| subscription.paid_through <= Date.today}, "subscriptions paid through tomorrow aren't billable yet"
     assert expirable.all? {|subscription| !subscription.expire_on or subscription.expire_on < subscription.paid_through}, "subscriptions already expiring aren't billable"
+    assert_equal 2, expirable.size
   end
 
   def test_charging_a_subscription
@@ -71,11 +74,11 @@ class ManualBillingTest < Test::Unit::TestCase
   protected
 
   def create_billable_subscription(options = {})
-    Subscription.create({
+    Subscription.create!({
       :subscription_plan => subscription_plans(:premium),
       :subscribable => User.new(:name => 'a'),
       :paid_through => Date.today - 1,
-      :billing_key => 'ninerfivebravo'
+      :credit_card => CreditCard.example
     }.merge(options))
   end
 end

@@ -3,12 +3,12 @@ require File.dirname(__FILE__) + '/../test_helper'
 class RecurringBillingTest < Test::Unit::TestCase
   fixtures :users, :subscriptions, :subscription_plans, :credit_cards
 
-  def setup
-    Freemium.gateway = Freemium::Gateways::Test.new
-  end
-
   class Subscription < ::Subscription
     include Freemium::RecurringBilling
+  end
+
+  def setup
+    Freemium.gateway = Freemium::Gateways::Test.new
   end
 
   def test_run_billing
@@ -31,12 +31,15 @@ class RecurringBillingTest < Test::Unit::TestCase
     create_billable_subscription # this subscription qualifies
     create_billable_subscription(:subscription_plan => subscription_plans(:free)) # this subscription would qualify, except it's for the free plan
     create_billable_subscription(:paid_through => Date.today) # this subscription would qualify, except it's already paid
-    create_billable_subscription(:expire_on => Date.today + 1) # this subscription would qualify, except it's already been set to expire
+    create_billable_subscription(:coupon => Coupon.create!(:description => "Complimentary", :discount_percentage => 100)) # should NOT be billable because it's free
+    s = create_billable_subscription # this subscription would qualify, except it's already been set to expire
+    s.update_attribute :expire_on, Date.today + 1
 
     expirable = Subscription.send(:find_expirable)
-    assert expirable.all? {|subscription| subscription.subscription_plan.rate_cents > 0}, "free subscriptions don't expire"
+    assert expirable.all? {|subscription| subscription.paid?}, "free subscriptions don't expire"
     assert expirable.all? {|subscription| subscription.paid_through < Date.today}, "paid subscriptions don't expire"
     assert expirable.all? {|subscription| !subscription.expire_on or subscription.expire_on < subscription.paid_through}, "subscriptions already expiring aren't included"
+    assert_equal 1, expirable.size    
   end
 
   def test_processing_new_transactions
@@ -83,10 +86,11 @@ class RecurringBillingTest < Test::Unit::TestCase
   protected
 
   def create_billable_subscription(options = {})
-    Subscription.create({
+    Subscription.create!({
       :subscription_plan => subscription_plans(:premium),
       :subscribable => User.new(:name => 'a'),
-      :paid_through => Date.today - 1
+      :paid_through => Date.today - 1,
+      :credit_card => CreditCard.example
     }.merge(options))
   end
 end

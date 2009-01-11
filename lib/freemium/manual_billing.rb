@@ -39,12 +39,13 @@ module Freemium
       # subscriptions that expire the day *after* the given date. note that this
       # also finds past-due subscriptions, as long as they haven't been set to
       # expire.
+      # because of coupons we can't trust rate_cents alone and need to verify that the account is indeed paid?
       def find_billable(date = Date.today)
         find(
           :all,
           :include => [:subscription_plan],
           :conditions => ['subscription_plans.rate_cents > 0 AND paid_through <= ? AND (expire_on IS NULL or expire_on < paid_through)', date.to_date]
-        )
+        ).select{|s| s.paid?}
       end
     end
   end
