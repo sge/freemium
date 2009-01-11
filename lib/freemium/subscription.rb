@@ -44,11 +44,11 @@ module Freemium
     protected
 
     def set_paid_through
-      # TODO add in trial period handling
       # no prorations or trial periods when changing plans
       if subscription_plan_id_changed? && !paid_through_changed?
         if paid?
           self.paid_through = Date.today
+          self.paid_through += Freemium.days_trial if Freemium.days_trial && new_record?
         else
           self.paid_through = nil
         end

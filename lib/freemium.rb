@@ -45,6 +45,12 @@ module Freemium
 
     attr_accessor :expired_plan_key
 
+    # How many days in an initial free trial?
+    attr_writer :days_trial
+    def days_trial
+      @days_trial ||= 30
+    end
+
     # If you want to receive admin reports, enter an email (or list of emails) here.
     # These will be bcc'd on all SubscriptionMailer emails, and will also receive the
     # admin activity report.

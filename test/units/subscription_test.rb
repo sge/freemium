@@ -3,6 +3,62 @@ require File.dirname(__FILE__) + '/../test_helper'
 class SubscriptionTest < Test::Unit::TestCase
   fixtures :users, :subscriptions, :subscription_plans, :credit_cards
 
+  def test_creating_free_subscription
+    subscription = build_subscription(:subscription_plan => subscription_plans(:free))
+    subscription.save!
+    assert !subscription.new_record?, subscription.errors.full_messages.to_sentence
+    assert_equal Date.today, subscription.reload.started_on
+    assert_nil subscription.paid_through
+    assert !subscription.paid?
+  end
+  
+  def test_creating_paid_subscription
+    subscription = build_subscription(:subscription_plan => subscription_plans(:basic), :credit_card => CreditCard.example)
+    subscription.save!
+    assert !subscription.new_record?, subscription.errors.full_messages.to_sentence
+    assert_equal Date.today, subscription.reload.started_on
+    assert_not_nil subscription.paid_through
+    assert_equal Date.today + Freemium.days_trial, subscription.paid_through
+    assert subscription.paid?
+    assert_not_nil subscription.billing_key
+  end  
+  
+  def test_upgrade_from_free
+    subscription = build_subscription(:subscription_plan => subscription_plans(:free))
+    subscription.save!
+    
+    new_date = Date.today + 10.days
+    Date.stubs(:today).returns(new_date)
+    
+    subscription.subscription_plan = subscription_plans(:basic)
+    subscription.credit_card = CreditCard.example    
+    subscription.save!
+    
+    assert_equal new_date, subscription.reload.started_on
+    assert_not_nil subscription.paid_through
+    assert_equal new_date, subscription.paid_through
+    assert subscription.paid?
+    assert_not_nil subscription.billing_key    
+  end
+  
+  def test_downgrade
+    subscription = build_subscription(:subscription_plan => subscription_plans(:basic), :credit_card => CreditCard.example)
+    subscription.save!
+    
+    new_date = Date.today + 10.days
+    Date.stubs(:today).returns(new_date)
+    
+    subscription.subscription_plan = subscription_plans(:free)
+    subscription.save!
+    
+    assert_equal new_date, subscription.reload.started_on
+    assert_nil subscription.paid_through
+    assert !subscription.paid?
+    assert_nil subscription.billing_key 
+    assert_nil subscription.credit_card   
+  end
+
+
   def test_associations
     assert_equal users(:bob), subscriptions(:bobs_subscription).subscribable
     assert_equal subscription_plans(:basic), subscriptions(:bobs_subscription).subscription_plan
@@ -20,12 +76,7 @@ class SubscriptionTest < Test::Unit::TestCase
   ## Validations
   ##
 
-  def test_creating_subscription
-    subscription = build_subscription
-    subscription.save!
-    assert !subscription.new_record?, subscription.errors.full_messages.to_sentence
-    assert_equal Date.today, subscription.reload.started_on
-  end
+
 
   def test_missing_fields
     [:subscription_plan, :subscribable].each do |field|
