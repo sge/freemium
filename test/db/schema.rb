@@ -36,9 +36,6 @@ ActiveRecord::Schema.define(:version => 1) do
     t.column :redemption_limit, :integer, :null => true 
     t.column :redemption_expiration, :date, :null => true
     t.column :duration_in_months, :integer, :null => true
-# survive upgrades or downgrades?
-# good for only plan X
-# good except for plan y    
   end
   
   create_table :coupons_subscription_plans, :id => false, :force => true do |t|
@@ -46,13 +43,15 @@ ActiveRecord::Schema.define(:version => 1) do
     t.column :subscription_plan_id, :integer, :null => false
   end  
   
-# audit table  
-  
   create_table :subscription_coupons, :force => true do |t|  
     t.column :subscription_id, :integer, :null => false
     t.column :coupon_id, :integer, :null => false 
     t.column :redeemed_on, :date, :null => false 
     t.column :expired_on, :date, :null => true
   end  
+  
+  # TODO add audit_payment_activity (for charges)
+  # TODO add audit_subscription_changes (for new, upgrade, downgrade, cancels)
+  # TODO add audit_subscriptions (for expires)
   
 end
