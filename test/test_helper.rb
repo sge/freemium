@@ -52,7 +52,7 @@ class CreditCard
   end
   
   def self.sample
-    new(example_params)
+    CreditCard.new(CreditCard.sample_params)
   end
 end
 
