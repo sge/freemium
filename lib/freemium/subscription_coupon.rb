@@ -38,7 +38,7 @@ module Freemium
     end
     
     def validate_on_create
-      errors.add :subscription,  "must be paid"             if self.subscription && !self.subscription.paid?
+      errors.add :subscription,  "must be paid"             if self.subscription && !self.subscription.subscription_plan.paid?
       errors.add :coupon,  "has expired"                    if self.coupon && (self.coupon.expired? || self.coupon.expired?)  
       errors.add :coupon,  "is not valid for selected plan" if self.coupon && self.subscription && !self.coupon.applies_to_plan?(self.subscription.subscription_plan)
     end    

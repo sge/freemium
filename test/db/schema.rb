@@ -50,8 +50,10 @@ ActiveRecord::Schema.define(:version => 1) do
     t.column :expired_on, :date, :null => true
   end  
   
-  # TODO add audit_payment_activity (for charges)
-  # TODO add audit_subscription_changes (for new, upgrade, downgrade, cancels)
-  # TODO add audit_subscriptions (for expires)
+  create_table :subscription_activity, :force => true do |t|  
+    t.column :subscription_id, :integer, :null => false
+    t.column :action, :string, :null => false 
+    t.column :created_at, :datetime, :null => true
+  end  
   
 end
