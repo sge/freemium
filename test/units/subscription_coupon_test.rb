@@ -10,8 +10,14 @@ class CouponRedemptionTest < Test::Unit::TestCase
   end
   
   def test_apply
+    @subscription.paid_through = Date.today + 30
+    @original_remaining_value = @subscription.remaining_value
+    @original_daily_rate = @subscription.daily_rate
+    
     assert @subscription.coupon_redemptions.create(:coupon => @coupon)
-    assert_equal (@original_price * 0.7).cents, @subscription.rate.cents
+    assert_equal @coupon.discount(@original_price).cents, @subscription.rate.cents
+    assert_equal @coupon.discount(@original_daily_rate).cents, @subscription.daily_rate.cents
+    assert_equal (@coupon.discount(@original_daily_rate) * @subscription.remaining_days).cents, @subscription.remaining_value.cents
   end  
 
   def test_apply_using_coupon_accessor
@@ -22,26 +28,26 @@ class CouponRedemptionTest < Test::Unit::TestCase
     assert_not_nil @subscription.coupon_redemptions.first.coupon
     assert_not_nil @subscription.coupon_redemptions.first.subscription
     assert !@subscription.coupon_redemptions.empty?
-    assert_equal (@subscription.subscription_plan.rate * 0.7).cents, @subscription.rate.cents
+    assert_equal @coupon.discount(@subscription.subscription_plan.rate).cents, @subscription.rate.cents
   end
 
   def test_apply_multiple
-    @coupon = FreemiumCoupon.new(:description => "10% off", :discount_percentage => 10)
-    assert @subscription.coupon_redemptions.create(:coupon => @coupon)
+    @coupon_1 = FreemiumCoupon.new(:description => "10% off", :discount_percentage => 10)
+    assert @subscription.coupon_redemptions.create(:coupon => @coupon_1)
     
-    @coupon = FreemiumCoupon.new(:description => "30% off", :discount_percentage => 30)
-    assert @subscription.coupon_redemptions.create(:coupon => @coupon)
+    @coupon_2 = FreemiumCoupon.new(:description => "30% off", :discount_percentage => 30)
+    assert @subscription.coupon_redemptions.create(:coupon => @coupon_2)
     
-    @coupon = FreemiumCoupon.new(:description => "20% off", :discount_percentage => 20)
-    assert @subscription.coupon_redemptions.create(:coupon => @coupon)
+    @coupon_3 = FreemiumCoupon.new(:description => "20% off", :discount_percentage => 20)
+    assert @subscription.coupon_redemptions.create(:coupon => @coupon_3)
 
     # Should use the highest discounted coupon
-    assert_equal (@original_price * 0.7).cents, @subscription.rate.cents
+    assert_equal @coupon_2.discount(@original_price).cents, @subscription.rate.cents
   end  
   
   def test_destroy
     assert @subscription.coupon_redemptions.create(:coupon => @coupon)
-    assert_equal (@original_price * 0.7).cents, @subscription.rate.cents
+    assert_equal @coupon.discount(@original_price).cents, @subscription.rate.cents
     
     @coupon.destroy
     @subscription.reload
@@ -52,7 +58,7 @@ class CouponRedemptionTest < Test::Unit::TestCase
   
   def test_do_not_survive_plan_change
     assert @subscription.coupon_redemptions.create(:coupon => @coupon)
-    assert_equal (@original_price * 0.7).cents, @subscription.rate.cents
+    assert_equal @coupon.discount(@original_price).cents, @subscription.rate.cents
     
     assert @subscription.subscription_plan != freemium_subscription_plans(:premium)
     @subscription.subscription_plan = freemium_subscription_plans(:premium)
@@ -64,18 +70,18 @@ class CouponRedemptionTest < Test::Unit::TestCase
   
   def test_coupon_duration
     assert @subscription.coupon_redemptions.create(:coupon => @coupon)
-    assert_equal (@original_price * 0.7).cents, @subscription.rate.cents
+    assert_equal @coupon.discount(@original_price).cents, @subscription.rate.cents
     
     @coupon.duration_in_months = 3
     @coupon.save!
     
     safe_date = Date.today + 3.months - 1
     Date.stubs(:today).returns(safe_date)
-    assert_equal (@original_price * 0.7).cents, @subscription.rate.cents
+    assert_equal @coupon.discount(@original_price).cents, @subscription.rate.cents
     
     safe_date = Date.today + 1
     Date.stubs(:today).returns(safe_date)
-    assert_equal (@original_price * 0.7).cents, @subscription.rate.cents
+    assert_equal @coupon.discount(@original_price).cents, @subscription.rate.cents
     
     safe_date = Date.today + 1
     Date.stubs(:today).returns(safe_date)

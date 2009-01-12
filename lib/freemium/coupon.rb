@@ -13,6 +13,10 @@ module Freemium
       end
     end
     
+    def discount(rate)
+      rate * (1 - self.discount_percentage.to_f / 100)
+    end
+    
     def expired?
       (self.redemption_expiration && Date.today > self.redemption_expiration) || (self.redemption_limit && self.coupon_redemptions.count >= self.redemption_limit)
     end

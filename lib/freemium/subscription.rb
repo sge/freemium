@@ -7,7 +7,8 @@
 #
 module Freemium
   module Subscription
-    
+    include Rates
+        
     def self.included(base)
       base.class_eval do
         belongs_to :subscription_plan, :class_name => "FreemiumSubscriptionPlan"
@@ -116,7 +117,7 @@ module Freemium
     def rate
       return nil unless subscription_plan
       rate = self.subscription_plan.rate
-      rate = rate * (1 - self.coupon.discount_percentage.to_f/100) if coupon
+      rate = self.coupon.discount(rate) if coupon
       rate
     end
     
@@ -168,8 +169,7 @@ module Freemium
     # returns the value of the time between now and paid_through.
     # will optionally interpret the time according to a certain subscription plan.
     def remaining_value(subscription_plan_id = self.subscription_plan_id)
-      # FIXME Should use the local version of daily_rate
-      self.subscription_plan.daily_rate * remaining_days
+      self.daily_rate * remaining_days
     end
 
     # if paid through today, returns zero
@@ -225,11 +225,11 @@ module Freemium
     # really, i expect the case where the received payment does not match the
     # subscription plan's rate to be very much an edge case.
     def receive_payment(value)
-      self.paid_through = if value.cents % subscription_plan.rate.cents == 0
-        self.paid_through + (value.cents / subscription_plan.rate.cents).months
+      self.paid_through = if value.cents % rate.cents == 0
+        self.paid_through + (value.cents / rate.cents).months
       else
         # edge case
-        self.paid_through + (value.cents / subscription_plan.daily_rate.cents)
+        self.paid_through + (value.cents / daily_rate.cents)
       end
       
       # if they've paid again, then reset expiration

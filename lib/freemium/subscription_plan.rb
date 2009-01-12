@@ -6,6 +6,7 @@
 #
 module Freemium
   module SubscriptionPlan
+    include Rates
     
     def self.included(base)
       base.class_eval do
@@ -28,33 +29,6 @@ module Freemium
     def features
       Freemium::FeatureSet.find(self.feature_set_id)
     end
-    
-    # returns the daily cost of this plan.
-    def daily_rate
-      yearly_rate / 365
-    end
-
-    # returns the yearly cost of this plan.
-    def yearly_rate
-      rate * 12
-    end
-
-    # returns the monthly cost of this plan.
-    def monthly_rate
-      rate
-    end
-    
-    def paid?
-      rate_cents > 0
-    end    
-
-    def complimentary?
-      !self.paid? and self.subscription_plan.paid?
-    end
-
-    def discounted?
-      self.rate_cents != self.subscription_plan.rate_cents
-    end    
     
     protected
     
