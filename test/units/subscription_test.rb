@@ -14,13 +14,15 @@ class SubscriptionTest < Test::Unit::TestCase
   end
   
   def test_creating_paid_subscription
+    Freemium.days_free_trial = 30
+  
     subscription = build_subscription(:subscription_plan => freemium_subscription_plans(:basic), :credit_card => FreemiumCreditCard.sample)
     subscription.save!
 
     assert !subscription.new_record?, subscription.errors.full_messages.to_sentence
     assert_equal Date.today, subscription.reload.started_on
     assert_not_nil subscription.paid_through
-    assert_equal Date.today + Freemium.days_trial, subscription.paid_through
+    assert_equal Date.today + Freemium.days_free_trial, subscription.paid_through
     assert subscription.paid?
     assert_not_nil subscription.billing_key
   end  

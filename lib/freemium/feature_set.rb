@@ -25,7 +25,7 @@ module Freemium
 
     cattr_accessor :config_file
     def self.config_file
-      @@config_file ||= File.join(RAILS_ROOT, 'config', 'feature_sets.yaml')
+      @@config_file ||= File.join(RAILS_ROOT, 'config', 'freemium_feature_sets.yml')
     end
 
     cattr_accessor :feature_sets

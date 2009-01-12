@@ -56,4 +56,4 @@ class FreemiumCreditCard
   end
 end
 
-Freemium::FeatureSet.config_file = File.dirname(__FILE__) + '/feature_sets.yml'
+Freemium::FeatureSet.config_file = File.dirname(__FILE__) + '/freemium_feature_sets.yml'

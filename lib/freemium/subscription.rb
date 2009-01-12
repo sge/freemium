@@ -45,7 +45,7 @@ module Freemium
       if subscription_plan_id_changed? && !paid_through_changed?
         if paid?
           self.paid_through = Date.today
-          self.paid_through += Freemium.days_trial if Freemium.days_trial && new_record?
+          self.paid_through += Freemium.days_free_trial if new_record?
         else
           self.paid_through = nil
         end
