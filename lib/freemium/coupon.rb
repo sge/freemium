@@ -3,8 +3,8 @@ module Freemium
     
     def self.included(base)
       base.class_eval do
-        has_many :subscription_coupons, :dependent => :destroy
-        has_many :subscriptions, :through => :subscription_coupons
+        has_many :coupon_redemptions, :dependent => :destroy
+        has_many :subscriptions, :through => :coupon_redemptions
         has_and_belongs_to_many :subscription_plans
         
         validates_presence_of :description, :discount_percentage
@@ -13,7 +13,7 @@ module Freemium
     end
     
     def expired?
-      (self.redemption_expiration && Date.today > self.redemption_expiration) || (self.redemption_limit && self.subscription_coupons.count >= self.redemption_limit)
+      (self.redemption_expiration && Date.today > self.redemption_expiration) || (self.redemption_limit && self.coupon_redemptions.count >= self.redemption_limit)
     end
     
     def applies_to_plan?(subscription_plan)

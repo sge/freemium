@@ -18,6 +18,6 @@ class Coupon < ActiveRecord::Base
   include Freemium::Coupon
 end
 
-class SubscriptionCoupon < ActiveRecord::Base
-  include Freemium::SubscriptionCoupon
+class CouponRedemption < ActiveRecord::Base
+  include Freemium::CouponRedemption
 end

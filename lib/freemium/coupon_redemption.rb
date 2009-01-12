@@ -1,5 +1,5 @@
 module Freemium
-  module SubscriptionCoupon
+  module CouponRedemption
     
     def self.included(base)
       base.class_eval do

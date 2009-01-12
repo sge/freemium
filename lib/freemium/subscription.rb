@@ -13,8 +13,8 @@ module Freemium
         belongs_to :subscription_plan
         belongs_to :subscribable, :polymorphic => true
         belongs_to :credit_card, :dependent => :destroy
-        has_many :subscription_coupons, :conditions => "expired_on IS NULL"
-        has_many :coupons, :through => :subscription_coupons, :conditions => "subscription_coupons.expired_on IS NULL"
+        has_many :coupon_redemptions, :conditions => "expired_on IS NULL"
+        has_many :coupons, :through => :coupon_redemptions, :conditions => "coupon_redemptions.expired_on IS NULL"
               
         before_validation :set_paid_through
         before_validation :set_started_on
@@ -93,7 +93,7 @@ module Freemium
     
     # disable coupons when
     def deactivate_coupons_if_plan_changed
-      self.subscription_coupons.each{ |c| c.expire! } if subscription_plan_id_changed? && !new_record?
+      self.coupon_redemptions.each{ |c| c.expire! } if subscription_plan_id_changed? && !new_record?
     end
     
     public
@@ -125,13 +125,13 @@ module Freemium
     end  
       
     def coupon=(coupon)
-      s = ::SubscriptionCoupon.new(:subscription => self, :coupon => coupon)
-      subscription_coupons << s
+      s = ::CouponRedemption.new(:subscription => self, :coupon => coupon)
+      coupon_redemptions << s
     end
     
     def coupon
-      return nil if subscription_coupons.empty?
-      active_coupons = subscription_coupons.select{|c| c.active?}
+      return nil if coupon_redemptions.empty?
+      active_coupons = coupon_redemptions.select{|c| c.active?}
       return nil if active_coupons.empty?
       active_coupons.sort_by{|c| c.coupon.discount_percentage }.reverse.first.coupon
     end

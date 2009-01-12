@@ -43,7 +43,7 @@ ActiveRecord::Schema.define(:version => 1) do
     t.column :subscription_plan_id, :integer, :null => false
   end  
   
-  create_table :subscription_coupons, :force => true do |t|  
+  create_table :coupon_redemptions, :force => true do |t|  
     t.column :subscription_id, :integer, :null => false
     t.column :coupon_id, :integer, :null => false 
     t.column :redeemed_on, :date, :null => false 
