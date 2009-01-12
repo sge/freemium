@@ -41,13 +41,18 @@ ActiveRecord::Schema.define(:version => 1) do
 # good except for plan y    
   end
   
+  create_table :coupons_subscription_plans, :id => false, :force => true do |t|
+    t.column :coupon_id, :integer, :null => false
+    t.column :subscription_plan_id, :integer, :null => false
+  end  
+  
 # audit table  
   
   create_table :subscription_coupons, :force => true do |t|  
     t.column :subscription_id, :integer, :null => false
     t.column :coupon_id, :integer, :null => false 
     t.column :redeemed_on, :date, :null => false 
-    t.column :deleted_at, :datetime, :null => true
+    t.column :expired_on, :date, :null => true
   end  
   
 end

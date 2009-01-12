@@ -13,7 +13,8 @@ module Freemium
         belongs_to :subscription_plan
         belongs_to :subscribable, :polymorphic => true
         belongs_to :credit_card, :dependent => :destroy
-        has_many :subscription_coupons, :conditions => "deleted_at IS NULL"
+        has_many :subscription_coupons, :conditions => "expired_on IS NULL"
+        has_many :coupons, :through => :subscription_coupons, :conditions => "subscription_coupons.expired_on IS NULL"
               
         before_validation :set_paid_through
         before_validation :set_started_on
@@ -24,13 +25,9 @@ module Freemium
            
         validates_presence_of :subscribable
         validates_associated :subscribable
-        
-        validates_associated :subscription_plan
         validates_presence_of :subscription_plan
-        
         validates_presence_of :paid_through, :if => :paid? 
         validates_presence_of :started_on
-        
         validates_presence_of :credit_card, :if => :paid?
         validates_associated :credit_card, :if => :paid?
       end
@@ -96,7 +93,7 @@ module Freemium
     
     # disable coupons when
     def deactivate_coupons_if_plan_changed
-      self.subscription_coupons.each{|c| c.destroy} if subscription_plan_id_changed? && !new_record?
+      self.subscription_coupons.each{ |c| c.expire! } if subscription_plan_id_changed? && !new_record?
     end
     
     public
@@ -123,8 +120,13 @@ module Freemium
       rate
     end
     
+    def apply_coupon!(coupon)
+      self.coupons << coupon
+    end  
+      
     def coupon=(coupon)
-      self.subscription_coupons.build(:coupon => coupon)
+      s = ::SubscriptionCoupon.new(:subscription => self, :coupon => coupon)
+      subscription_coupons << s
     end
     
     def coupon
