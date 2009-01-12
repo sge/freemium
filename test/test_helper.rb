@@ -38,7 +38,7 @@ require File.dirname(__FILE__) + '/../init'
 require File.dirname(__FILE__) + '/db/models'
 
 # some test credit_card params
-class CreditCard
+class FreemiumCreditCard
   def self.sample_params
     {
       :first_name => "Santa",
@@ -52,7 +52,7 @@ class CreditCard
   end
   
   def self.sample
-    CreditCard.new(CreditCard.sample_params)
+    FreemiumCreditCard.new(FreemiumCreditCard.sample_params)
   end
 end
 

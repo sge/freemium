@@ -1,25 +1,25 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
 class ManualBillingTest < Test::Unit::TestCase
-  fixtures :users, :subscriptions, :subscription_plans, :credit_cards
+  fixtures :users, :freemium_subscriptions, :freemium_subscription_plans, :freemium_credit_cards
 
-  class Subscription < ::Subscription
+  class FreemiumSubscription < ::FreemiumSubscription
     include Freemium::ManualBilling
   end
 
   def test_find_billable
-    Subscription.any_instance.stubs(:charge!).returns(true)
+    FreemiumSubscription.any_instance.stubs(:charge!).returns(true)
 
     # making a one-off fixture set, basically
     create_billable_subscription # this subscription should be billable
     create_billable_subscription(:paid_through => Date.today) # this subscription should be billable
-    create_billable_subscription(:coupon => Coupon.create!(:description => "Complimentary", :discount_percentage => 100)) # should NOT be billable because it's free
-    create_billable_subscription(:subscription_plan => subscription_plans(:free)) # should NOT be billable because it's free
+    create_billable_subscription(:coupon => FreemiumCoupon.create!(:description => "Complimentary", :discount_percentage => 100)) # should NOT be billable because it's free
+    create_billable_subscription(:subscription_plan => freemium_subscription_plans(:free)) # should NOT be billable because it's free
     create_billable_subscription(:paid_through => Date.today + 1) # should NOT be billable because it's paid far enough out
     s = create_billable_subscription # should NOT be billable because it's already expiring
     s.update_attribute :expire_on, Date.today + 1
 
-    expirable = Subscription.send(:find_billable)
+    expirable = FreemiumSubscription.send(:find_billable)
     assert expirable.all? {|subscription| subscription.paid?}, "free subscriptions aren't billable"
     assert expirable.all? {|subscription| subscription.paid_through <= Date.today}, "subscriptions paid through tomorrow aren't billable yet"
     assert expirable.all? {|subscription| !subscription.expire_on or subscription.expire_on < subscription.paid_through}, "subscriptions already expiring aren't billable"
@@ -27,7 +27,7 @@ class ManualBillingTest < Test::Unit::TestCase
   end
 
   def test_charging_a_subscription
-    subscription = Subscription.find(:first)
+    subscription = FreemiumSubscription.find(:first)
     paid_through = subscription.paid_through
     Freemium.gateway.stubs(:charge).returns(
       Freemium::Transaction.new(
@@ -42,7 +42,7 @@ class ManualBillingTest < Test::Unit::TestCase
   end
 
   def test_failing_to_charge_a_subscription
-    subscription = Subscription.find(:first)
+    subscription = FreemiumSubscription.find(:first)
     paid_through = subscription.paid_through
     Freemium.gateway.stubs(:charge).returns(
       Freemium::Transaction.new(
@@ -59,26 +59,26 @@ class ManualBillingTest < Test::Unit::TestCase
   end
 
   def test_run_billing_calls_charge_on_billable
-    subscription = Subscription.find(:first)
-    Subscription.stubs(:find_billable).returns([subscription])
+    subscription = FreemiumSubscription.find(:first)
+    FreemiumSubscription.stubs(:find_billable).returns([subscription])
     subscription.expects(:charge!).once
-    Subscription.send :run_billing
+    FreemiumSubscription.send :run_billing
   end
 
   def test_run_billing_sends_report
     Freemium.stubs(:admin_report_recipients).returns("test@example.com")
     Freemium.mailer.expects(:deliver_admin_report)
-    Subscription.send :run_billing
+    FreemiumSubscription.send :run_billing
   end
 
   protected
 
   def create_billable_subscription(options = {})
-    Subscription.create!({
-      :subscription_plan => subscription_plans(:premium),
+    FreemiumSubscription.create!({
+      :subscription_plan => freemium_subscription_plans(:premium),
       :subscribable => User.new(:name => 'a'),
       :paid_through => Date.today - 1,
-      :credit_card => CreditCard.sample
+      :credit_card => FreemiumCreditCard.sample
     }.merge(options))
   end
 end

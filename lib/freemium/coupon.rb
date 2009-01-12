@@ -3,9 +3,10 @@ module Freemium
     
     def self.included(base)
       base.class_eval do
-        has_many :coupon_redemptions, :dependent => :destroy
+        has_many :coupon_redemptions, :dependent => :destroy, :class_name => "FreemiumCouponRedemption", :foreign_key => :coupon_id
         has_many :subscriptions, :through => :coupon_redemptions
-        has_and_belongs_to_many :subscription_plans
+        has_and_belongs_to_many :subscription_plans, :class_name => "FreemiumSubscriptionPlan", 
+          :join_table => :freemium_coupons_subscription_plans, :foreign_key => :coupon_id, :association_foreign_key => :subscription_plan_id
         
         validates_presence_of :description, :discount_percentage
         validates_inclusion_of :discount_percentage, :in => 1..100

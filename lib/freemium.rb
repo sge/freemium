@@ -21,8 +21,8 @@ module Freemium
     # Freemium will simply try and keep up-to-date on transactions.
     def billing_controller=(val)
       case val
-        when :freemium: Subscription.send(:include, Freemium::ManualBilling)
-        when :arb:      Subscription.send(:include, Freemium::RecurringBilling)
+        when :freemium: FreemiumSubscription.send(:include, Freemium::ManualBilling)
+        when :arb:      FreemiumSubscription.send(:include, Freemium::RecurringBilling)
         else raise "unknown billing_controller: #{val}"
       end
     end
@@ -37,12 +37,13 @@ module Freemium
     attr_writer :expired_plan
     def expired_plan
       unless @expired_plan 
-        @expired_plan = ::SubscriptionPlan.find_by_key(expired_plan_key.to_s) unless expired_plan_key.nil?
-        @expired_plan ||= ::SubscriptionPlan.find(:first, :conditions => "rate_cents = 0")
+        @expired_plan = FreemiumSubscriptionPlan.find_by_key(expired_plan_key.to_s) unless expired_plan_key.nil?
+        @expired_plan ||= FreemiumSubscriptionPlan.find(:first, :conditions => "rate_cents = 0")
       end
       @expired_plan
     end
 
+    # It's easier to assign a plan by it's key (so you don't get errors before you run migrations)
     attr_accessor :expired_plan_key
 
     # How many days in an initial free trial?

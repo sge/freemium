@@ -10,10 +10,10 @@ module Freemium
     
     def self.included(base)
       base.class_eval do
-        belongs_to :subscription_plan
+        belongs_to :subscription_plan, :class_name => "FreemiumSubscriptionPlan"
         belongs_to :subscribable, :polymorphic => true
-        belongs_to :credit_card, :dependent => :destroy
-        has_many :coupon_redemptions, :conditions => "expired_on IS NULL"
+        belongs_to :credit_card, :dependent => :destroy, :class_name => "FreemiumCreditCard"
+        has_many :coupon_redemptions, :conditions => "expired_on IS NULL", :class_name => "FreemiumCouponRedemption", :foreign_key => :subscription_id
         has_many :coupons, :through => :coupon_redemptions, :conditions => "coupon_redemptions.expired_on IS NULL"
               
         before_validation :set_paid_through
@@ -115,17 +115,26 @@ module Freemium
     
     def rate
       return nil unless subscription_plan
-      rate = subscription_plan.rate
+      rate = self.subscription_plan.rate
       rate = rate * (1 - self.coupon.discount_percentage.to_f/100) if coupon
       rate
     end
+    
+    def paid?
+      return false unless rate
+      rate.cents > 0
+    end
+    
+    ##
+    ## Coupon Redemption
+    ##
     
     def apply_coupon!(coupon)
       self.coupons << coupon
     end  
       
     def coupon=(coupon)
-      s = ::CouponRedemption.new(:subscription => self, :coupon => coupon)
+      s = FreemiumCouponRedemption.new(:subscription => self, :coupon => coupon)
       coupon_redemptions << s
     end
     
@@ -134,11 +143,6 @@ module Freemium
       active_coupons = coupon_redemptions.select{|c| c.active?}
       return nil if active_coupons.empty?
       active_coupons.sort_by{|c| c.coupon.discount_percentage }.reverse.first.coupon
-    end
-    
-    def paid?
-      return false unless rate
-      rate.cents > 0
     end
 
     ##
@@ -164,7 +168,8 @@ module Freemium
     # returns the value of the time between now and paid_through.
     # will optionally interpret the time according to a certain subscription plan.
     def remaining_value(subscription_plan_id = self.subscription_plan_id)
-      ::SubscriptionPlan.find(subscription_plan_id).daily_rate * remaining_days
+      # FIXME Should use the local version of daily_rate
+      self.subscription_plan.daily_rate * remaining_days
     end
 
     # if paid through today, returns zero

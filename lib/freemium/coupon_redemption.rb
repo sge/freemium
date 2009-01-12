@@ -3,8 +3,8 @@ module Freemium
     
     def self.included(base)
       base.class_eval do
-        belongs_to :subscription
-        belongs_to :coupon
+        belongs_to :subscription, :class_name => "FreemiumSubscription"
+        belongs_to :coupon, :class_name => "FreemiumCoupon"
         
         before_create :set_redeemed_on
         

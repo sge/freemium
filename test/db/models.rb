@@ -2,22 +2,22 @@ class User < ActiveRecord::Base
   has_many :subscriptions, :as => :subscribable
 end
 
-class Subscription < ActiveRecord::Base
+class FreemiumSubscription < ActiveRecord::Base
   include Freemium::Subscription
 end
 
-class SubscriptionPlan < ActiveRecord::Base
+class FreemiumSubscriptionPlan < ActiveRecord::Base
   include Freemium::SubscriptionPlan
 end
 
-class CreditCard < ActiveRecord::Base
+class FreemiumCreditCard < ActiveRecord::Base
   include Freemium::CreditCard
 end
 
-class Coupon < ActiveRecord::Base
+class FreemiumCoupon < ActiveRecord::Base
   include Freemium::Coupon
 end
 
-class CouponRedemption < ActiveRecord::Base
+class FreemiumCouponRedemption < ActiveRecord::Base
   include Freemium::CouponRedemption
 end
