@@ -90,7 +90,7 @@ class RecurringBillingTest < Test::Unit::TestCase
       :subscription_plan => subscription_plans(:premium),
       :subscribable => User.new(:name => 'a'),
       :paid_through => Date.today - 1,
-      :credit_card => CreditCard.example
+      :credit_card => CreditCard.sample
     }.merge(options))
   end
 end

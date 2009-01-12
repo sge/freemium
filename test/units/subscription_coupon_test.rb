@@ -15,7 +15,7 @@ class SubscriptionCouponTest < Test::Unit::TestCase
   end  
 
   def test_apply_using_coupon_accessor
-    @subscription = build_subscription(:coupon => @coupon, :credit_card => CreditCard.example)    
+    @subscription = build_subscription(:coupon => @coupon, :credit_card => CreditCard.sample)    
     @subscription.save!
     assert_not_nil @subscription.coupon
     assert_not_nil @subscription.subscription_coupons.first.coupon
@@ -94,7 +94,7 @@ class SubscriptionCouponTest < Test::Unit::TestCase
   def test_apply_premium_only_coupon_on_new
     set_coupon_to_premium_only
     
-    @subscription = build_subscription(:coupon => @coupon, :credit_card => CreditCard.example, :subscription_plan => subscription_plans(:premium))
+    @subscription = build_subscription(:coupon => @coupon, :credit_card => CreditCard.sample, :subscription_plan => subscription_plans(:premium))
     
     assert @subscription.save
     assert_not_nil @subscription.coupon
@@ -113,7 +113,7 @@ class SubscriptionCouponTest < Test::Unit::TestCase
   def test_invalid_apply_premium_only_coupon_on_new
     set_coupon_to_premium_only
     
-    @subscription = build_subscription(:coupon => @coupon, :credit_card => CreditCard.example, :subscription_plan => subscription_plans(:basic))
+    @subscription = build_subscription(:coupon => @coupon, :credit_card => CreditCard.sample, :subscription_plan => subscription_plans(:basic))
     
     assert !@subscription.save
     assert !@subscription.errors.on(:subscription_coupons).empty?

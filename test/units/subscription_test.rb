@@ -13,7 +13,7 @@ class SubscriptionTest < Test::Unit::TestCase
   end
   
   def test_creating_paid_subscription
-    subscription = build_subscription(:subscription_plan => subscription_plans(:basic), :credit_card => CreditCard.example)
+    subscription = build_subscription(:subscription_plan => subscription_plans(:basic), :credit_card => CreditCard.sample)
     subscription.save!
     assert !subscription.new_record?, subscription.errors.full_messages.to_sentence
     assert_equal Date.today, subscription.reload.started_on
@@ -31,7 +31,7 @@ class SubscriptionTest < Test::Unit::TestCase
     Date.stubs(:today).returns(new_date)
     
     subscription.subscription_plan = subscription_plans(:basic)
-    subscription.credit_card = CreditCard.example    
+    subscription.credit_card = CreditCard.sample    
     subscription.save!
     
     assert_equal new_date, subscription.reload.started_on
@@ -42,7 +42,7 @@ class SubscriptionTest < Test::Unit::TestCase
   end
   
   def test_downgrade
-    subscription = build_subscription(:subscription_plan => subscription_plans(:basic), :credit_card => CreditCard.example)
+    subscription = build_subscription(:subscription_plan => subscription_plans(:basic), :credit_card => CreditCard.sample)
     subscription.save!
     
     new_date = Date.today + 10.days
@@ -223,7 +223,7 @@ class SubscriptionTest < Test::Unit::TestCase
   ##
   def test_adding_a_credit_card
     subscription = build_subscription(:subscription_plan => subscription_plans(:premium))
-    cc = CreditCard.example
+    cc = CreditCard.sample
     response = Freemium::Response.new(true)
     response.billing_key = "alphabravo"
     Freemium.gateway.expects(:store).with(cc).returns(response)
@@ -235,7 +235,7 @@ class SubscriptionTest < Test::Unit::TestCase
 
   def test_updating_a_credit_card
     subscription = ::Subscription.find(:first, :conditions => "billing_key IS NOT NULL")
-    cc = CreditCard.example
+    cc = CreditCard.sample
     response = Freemium::Response.new(true)
     response.billing_key = "new code"
     Freemium.gateway.expects(:update).with(subscription.billing_key, cc).returns(response)
@@ -247,7 +247,7 @@ class SubscriptionTest < Test::Unit::TestCase
   
   def test_updating_an_expired_credit_card
     subscription = ::Subscription.find(:first, :conditions => "billing_key IS NOT NULL")    
-    cc = CreditCard.example
+    cc = CreditCard.sample
     response = Freemium::Response.new(true)
     Freemium.gateway.expects(:update).with(subscription.billing_key, cc).returns(response)
 
@@ -263,7 +263,7 @@ class SubscriptionTest < Test::Unit::TestCase
 
   def test_failing_to_add_a_credit_card
     subscription = build_subscription(:subscription_plan => subscription_plans(:premium))
-    cc = CreditCard.example
+    cc = CreditCard.sample
     response = Freemium::Response.new(false)
     Freemium.gateway.expects(:store).returns(response)
     

@@ -4,7 +4,7 @@ class CreditCardTest < Test::Unit::TestCase
   fixtures :subscriptions, :credit_cards, :subscription_plans, :users
   
   def setup
-    @first_card_params = CreditCard.example_params
+    @first_card_params = CreditCard.sample_params
     
     @subscription = Subscription.new(:subscription_plan => subscription_plans(:premium), :subscribable => users(:sally))
     @credit_card = CreditCard.new(@first_card_params.merge(:subscription => @subscription))   

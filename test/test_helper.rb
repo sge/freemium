@@ -39,7 +39,7 @@ require File.dirname(__FILE__) + '/db/models'
 
 # some test credit_card params
 class CreditCard
-  def self.example_params
+  def self.sample_params
     {
       :first_name => "Santa",
       :last_name => "Claus",
@@ -51,7 +51,7 @@ class CreditCard
     }
   end
   
-  def self.example
+  def self.sample
     new(example_params)
   end
 end
