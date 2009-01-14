@@ -18,6 +18,7 @@ module Freemium
         
         composed_of :rate, :class_name => 'Money', :mapping => [ %w(rate_cents cents) ], :allow_nil => true
         
+        validates_uniqueness_of :key
         validates_presence_of :name
         validates_presence_of :key
         validates_presence_of :rate_cents
@@ -33,7 +34,7 @@ module Freemium
     protected
     
     def set_key      
-      self.key = ActiveSupport::Inflector.underscore(name) unless name.blank?
+      self.key ||= ActiveSupport::Inflector.underscore(name) unless name.blank?
     end
     
   end
