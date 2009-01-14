@@ -13,6 +13,7 @@ class CouponRedemptionTest < Test::Unit::TestCase
     @subscription.paid_through = Date.today + 30
     @original_remaining_value = @subscription.remaining_value
     @original_daily_rate = @subscription.daily_rate
+    @subscription.coupon_key = nil
     
     assert @subscription.coupon_redemptions.create(:coupon => @coupon)
     assert_equal @coupon.discount(@original_price).cents, @subscription.rate.cents
@@ -145,15 +146,19 @@ class CouponRedemptionTest < Test::Unit::TestCase
   ##
   
   def test_apply_coupon
-    assert_nothing_raised do @subscription.apply_coupon!(@coupon) end
+    @subscription.coupon = @coupon
+    assert @subscription.valid?
     assert_not_nil @subscription.coupon
   end
 
   def test_apply_invalid_coupon
     set_coupon_to_premium_only
-    assert_raise ActiveRecord::RecordInvalid do
-      @subscription.apply_coupon!(@coupon)
-    end
+    
+    assert_not_equal freemium_subscription_plans(:premium), @subscription.subscription_plan
+    
+    @subscription.coupon = @coupon
+    assert !@subscription.valid?  
+    assert !@subscription.errors.on(:coupon_redemptions).empty?
   end
   
   protected
@@ -175,8 +180,6 @@ class CouponRedemptionTest < Test::Unit::TestCase
     assert !s.save
     assert !s.errors.on(:coupon).empty?
   end  
-
-
 
   def test_invalid_cannot_apply_to_unpaid_subscription
     assert !freemium_subscriptions(:sues_subscription).paid?

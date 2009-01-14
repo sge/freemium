@@ -125,20 +125,18 @@ module Freemium
     ##
     
     def coupon_key=(coupon_key)
-      self.coupon = FreemiumCoupon.find_by_redemption_key(coupon_key.downcase)
+      self.coupon = FreemiumCoupon.find_by_redemption_key(coupon_key.downcase) unless coupon_key.blank?
     end
     
     def coupon_key
       self.coupon.key if self.coupon
     end
-    
-    def apply_coupon!(coupon)
-      self.coupons << coupon
-    end  
       
     def coupon=(coupon)
-      s = FreemiumCouponRedemption.new(:subscription => self, :coupon => coupon)
-      coupon_redemptions << s
+      if coupon
+        s = FreemiumCouponRedemption.new(:subscription => self, :coupon => coupon)
+        coupon_redemptions << s
+      end
     end
     
     def coupon
