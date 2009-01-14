@@ -124,6 +124,14 @@ module Freemium
     ## Coupon Redemption
     ##
     
+    def coupon_key=(coupon_key)
+      self.coupon = FreemiumCoupon.find_by_redemption_key(coupon_key.downcase)
+    end
+    
+    def coupon_key
+      self.coupon.key if self.coupon
+    end
+    
     def apply_coupon!(coupon)
       self.coupons << coupon
     end  

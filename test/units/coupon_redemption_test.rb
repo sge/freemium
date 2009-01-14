@@ -6,7 +6,7 @@ class CouponRedemptionTest < Test::Unit::TestCase
   def setup
     @subscription = freemium_subscriptions(:bobs_subscription)
     @original_price = @subscription.rate
-    @coupon = FreemiumCoupon.create(:description => "30% off", :discount_percentage => 30)
+    @coupon = FreemiumCoupon.create(:description => "30% off", :discount_percentage => 30, :redemption_key => "30OFF")
   end
   
   def test_apply
@@ -22,6 +22,17 @@ class CouponRedemptionTest < Test::Unit::TestCase
 
   def test_apply_using_coupon_accessor
     @subscription = build_subscription(:coupon => @coupon, :credit_card => FreemiumCreditCard.sample)    
+    @subscription.save!
+    
+    assert_not_nil @subscription.coupon
+    assert_not_nil @subscription.coupon_redemptions.first.coupon
+    assert_not_nil @subscription.coupon_redemptions.first.subscription
+    assert !@subscription.coupon_redemptions.empty?
+    assert_equal @coupon.discount(@subscription.subscription_plan.rate).cents, @subscription.rate.cents
+  end
+  
+  def test_apply_using_coupon_key_accessor
+    @subscription = build_subscription(:coupon_key => @coupon.redemption_key, :credit_card => FreemiumCreditCard.sample)    
     @subscription.save!
     
     assert_not_nil @subscription.coupon

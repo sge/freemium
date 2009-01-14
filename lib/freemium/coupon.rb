@@ -10,6 +10,8 @@ module Freemium
         
         validates_presence_of :description, :discount_percentage
         validates_inclusion_of :discount_percentage, :in => 1..100
+        
+        before_save :normalize_redemption_key
       end
     end
     
@@ -25,6 +27,12 @@ module Freemium
       return true if self.subscription_plans.blank? # applies to all plans
       self.subscription_plans.include?(subscription_plan)
     end
+        
+    protected
+    
+    def normalize_redemption_key
+      self.redemption_key.downcase! unless self.redemption_key.blank?
+    end    
         
   end
 end

@@ -33,6 +33,7 @@ ActiveRecord::Schema.define(:version => 1) do
   create_table :freemium_coupons, :force => true do |t|  
     t.column :description, :string, :null => false
     t.column :discount_percentage, :integer, :null => false 
+    t.column :redemption_key, :string, :null => true
     t.column :redemption_limit, :integer, :null => true 
     t.column :redemption_expiration, :date, :null => true
     t.column :duration_in_months, :integer, :null => true
