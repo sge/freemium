@@ -54,19 +54,7 @@ class CouponRedemptionTest < Test::Unit::TestCase
     
     assert @subscription.coupon_redemptions.empty?
     assert_equal @original_price.cents, @subscription.rate.cents
-  end
-  
-  def test_do_not_survive_plan_change
-    assert @subscription.coupon_redemptions.create(:coupon => @coupon)
-    assert_equal @coupon.discount(@original_price).cents, @subscription.rate.cents
-    
-    assert @subscription.subscription_plan != freemium_subscription_plans(:premium)
-    @subscription.subscription_plan = freemium_subscription_plans(:premium)
-    @subscription.save!
-    
-    @subscription.reload
-    assert @subscription.coupon_redemptions.empty?
-  end  
+  end 
   
   def test_coupon_duration
     assert @subscription.coupon_redemptions.create(:coupon => @coupon)

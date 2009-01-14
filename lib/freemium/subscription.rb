@@ -22,7 +22,6 @@ module Freemium
         before_save :store_credit_card_offsite
         before_save :discard_credit_card_unless_paid
         before_destroy :cancel_in_remote_system
-        before_save :deactivate_coupons_if_plan_changed
            
         validates_presence_of :subscribable
         validates_associated :subscribable
@@ -90,11 +89,6 @@ module Freemium
         Freemium.gateway.cancel(self.billing_key)
         self.billing_key = nil
       end
-    end
-    
-    # disable coupons when
-    def deactivate_coupons_if_plan_changed
-      self.coupon_redemptions.each{ |c| c.expire! } if subscription_plan_id_changed? && !new_record?
     end
     
     public
