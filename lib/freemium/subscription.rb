@@ -108,10 +108,10 @@ module Freemium
     ## Rate
     ##
     
-    def rate
+    def rate(date = Date.today)
       return nil unless subscription_plan
       rate = self.subscription_plan.rate
-      rate = self.coupon.discount(rate) if coupon
+      rate = self.coupon(date).discount(rate) if coupon
       rate
     end
     
@@ -140,11 +140,15 @@ module Freemium
       end
     end
     
-    def coupon
+    def coupon(date = Date.today)
+      current_coupon_redemption(date).coupon rescue nil
+    end
+
+    def current_coupon_redemption(date = Date.today)
       return nil if coupon_redemptions.empty?
-      active_coupons = coupon_redemptions.select{|c| c.active?}
+      active_coupons = coupon_redemptions.select{|c| c.active?(date)}
       return nil if active_coupons.empty?
-      active_coupons.sort_by{|c| c.coupon.discount_percentage }.reverse.first.coupon
+      active_coupons.sort_by{|c| c.coupon.discount_percentage }.reverse.first
     end
 
     ##

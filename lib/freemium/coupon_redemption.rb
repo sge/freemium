@@ -18,8 +18,8 @@ module Freemium
       self.update_attribute :expired_on, Date.today
     end  
     
-    def active?
-      expires_on ? Date.today <= self.expires_on : true
+    def active?(date = Date.today)
+      expires_on ? date <= self.expires_on : true
     end
     
     def expires_on
