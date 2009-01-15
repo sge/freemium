@@ -142,7 +142,7 @@ class CouponRedemptionTest < Test::Unit::TestCase
   end  
   
   ##
-  ## apply_coupon!
+  ## applying coupons
   ##
   
   def test_apply_coupon
@@ -150,6 +150,14 @@ class CouponRedemptionTest < Test::Unit::TestCase
     assert @subscription.valid?
     assert_not_nil @subscription.coupon
   end
+  
+  def test_apply_invalid_key
+    @subscription.coupon_key = @coupon.redemption_key + "xxxxx"
+
+    assert !@subscription.valid?
+    assert_nil @subscription.coupon
+    assert !@subscription.errors.on(:coupon).empty?
+  end  
 
   def test_apply_invalid_coupon
     set_coupon_to_premium_only

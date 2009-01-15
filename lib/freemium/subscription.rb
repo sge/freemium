@@ -125,11 +125,12 @@ module Freemium
     ##
     
     def coupon_key=(coupon_key)
-      self.coupon = FreemiumCoupon.find_by_redemption_key(coupon_key.downcase) unless coupon_key.blank?
+      @coupon_key = coupon_key ? coupon_key.downcase : nil
+      self.coupon = FreemiumCoupon.find_by_redemption_key(@coupon_key) unless @coupon_key.blank?
     end
     
-    def coupon_key
-      self.coupon.key if self.coupon
+    def validate
+      self.errors.add :coupon, "could not be found for '#{@coupon_key}'" if !@coupon_key.blank? && FreemiumCoupon.find_by_redemption_key(@coupon_key).nil?
     end
       
     def coupon=(coupon)
