@@ -141,10 +141,10 @@ module Freemium
     end
     
     def coupon(date = Date.today)
-      current_coupon_redemption(date).coupon rescue nil
+      coupon_redemption(date).coupon rescue nil
     end
 
-    def current_coupon_redemption(date = Date.today)
+    def coupon_redemption(date = Date.today)
       return nil if coupon_redemptions.empty?
       active_coupons = coupon_redemptions.select{|c| c.active?(date)}
       return nil if active_coupons.empty?
