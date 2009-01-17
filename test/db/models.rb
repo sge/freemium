@@ -21,3 +21,11 @@ end
 class FreemiumCouponRedemption < ActiveRecord::Base
   include Freemium::CouponRedemption
 end
+
+class FreemiumTransaction < ActiveRecord::Base
+  include Freemium::Transaction
+end
+
+class FreemiumSubscriptionChange < ActiveRecord::Base
+  include Freemium::SubscriptionChange
+end

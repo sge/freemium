@@ -12,14 +12,14 @@ class RecurringBillingTest < Test::Unit::TestCase
   end
 
   def test_run_billing
-    FreemiumSubscription.expects(:process_new_transactions).once
+    FreemiumSubscription.expects(:process_transactions).once
     FreemiumSubscription.expects(:find_expirable).once.returns([])
     FreemiumSubscription.expects(:expire).once
     FreemiumSubscription.run_billing
   end
 
   def test_run_billing_sends_report
-    FreemiumSubscription.stubs(:process_new_transactions)
+    FreemiumSubscription.stubs(:process_transactions)
     Freemium.stubs(:admin_report_recipients).returns("test@example.com")
 
     Freemium.mailer.expects(:deliver_admin_report)
@@ -45,34 +45,34 @@ class RecurringBillingTest < Test::Unit::TestCase
   def test_processing_new_transactions
     subscription = freemium_subscriptions(:bobs_subscription)
     paid_through = subscription.paid_through
-    t = Freemium::Transaction.new(:billing_key => subscription.billing_key, :amount => subscription.subscription_plan.rate, :success => true)
+    t = FreemiumTransaction.new(:billing_key => subscription.billing_key, :amount => subscription.subscription_plan.rate, :success => true)
     FreemiumSubscription.stubs(:new_transactions).returns([t])
 
     # the actual test
-    FreemiumSubscription.send :process_new_transactions
+    FreemiumSubscription.send :process_transactions
     assert_equal (paid_through + 1.month).to_s, subscription.reload.paid_through.to_s, "extended by two months"
   end
   
   def test_processing_new_transactions_multiple_months
     subscription = freemium_subscriptions(:bobs_subscription)
     paid_through = subscription.paid_through = Date.parse("2009-01-31 00:00:00")
-    t = Freemium::Transaction.new(:billing_key => subscription.billing_key, :amount => subscription.subscription_plan.rate, :success => true)
+    t = FreemiumTransaction.new(:billing_key => subscription.billing_key, :amount => subscription.subscription_plan.rate, :success => true)
     FreemiumSubscription.stubs(:new_transactions).returns([t,t])
 
     # the actual test
-    FreemiumSubscription.send :process_new_transactions
+    FreemiumSubscription.send :process_transactions
     assert_equal (paid_through + 2.months).to_s, subscription.reload.paid_through.to_s, "extended by two months"
   end  
 
   def test_processing_a_failed_transaction
     subscription = freemium_subscriptions(:bobs_subscription)
     paid_through = subscription.paid_through
-    t = Freemium::Transaction.new(:billing_key => subscription.billing_key, :amount => subscription.subscription_plan.rate, :success => false)
+    t = FreemiumTransaction.new(:billing_key => subscription.billing_key, :amount => subscription.subscription_plan.rate, :success => false)
     FreemiumSubscription.stubs(:new_transactions).returns([t])
 
     # the actual test
     assert_nil subscription.expire_on
-    FreemiumSubscription.send :process_new_transactions
+    FreemiumSubscription.send :process_transactions
     assert_equal paid_through, subscription.reload.paid_through, "not extended"
     assert_not_nil subscription.expire_on
   end

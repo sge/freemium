@@ -58,5 +58,3 @@ module Freemium
     attr_accessor :admin_report_recipients
   end
 end
-
-require File.join(File.dirname(__FILE__), 'activity_logger')

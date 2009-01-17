@@ -30,7 +30,7 @@ class ManualBillingTest < Test::Unit::TestCase
     subscription = FreemiumSubscription.find(:first)
     paid_through = subscription.paid_through
     Freemium.gateway.stubs(:charge).returns(
-      Freemium::Transaction.new(
+      FreemiumTransaction.new(
         :billing_key => subscription.billing_key,
         :amount => subscription.subscription_plan.rate,
         :success => true
@@ -38,6 +38,12 @@ class ManualBillingTest < Test::Unit::TestCase
     )
 
     assert_nothing_raised do subscription.charge! end
+    assert !subscription.transactions.empty?
+    assert subscription.transactions.last
+    assert subscription.transactions.last.success?
+    assert_not_nil subscription.transactions.last.message?
+    assert !FreemiumTransaction.since(Date.today).empty?
+    assert_equal subscription.subscription_plan.rate, subscription.transactions.last.amount
     assert_equal (paid_through >> 1).to_s, subscription.reload.paid_through.to_s, "extended by a month"
   end
 
@@ -45,7 +51,7 @@ class ManualBillingTest < Test::Unit::TestCase
     subscription = FreemiumSubscription.find(:first)
     paid_through = subscription.paid_through
     Freemium.gateway.stubs(:charge).returns(
-      Freemium::Transaction.new(
+      FreemiumTransaction.new(
         :billing_key => subscription.billing_key,
         :amount => subscription.subscription_plan.rate,
         :success => false
@@ -56,6 +62,7 @@ class ManualBillingTest < Test::Unit::TestCase
     assert_nothing_raised do subscription.charge! end
     assert_equal paid_through, subscription.reload.paid_through, "not extended"
     assert_not_nil subscription.expire_on
+    assert !subscription.transactions.last.success?
   end
 
   def test_run_billing_calls_charge_on_billable

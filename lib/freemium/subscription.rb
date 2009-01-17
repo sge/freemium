@@ -16,12 +16,19 @@ module Freemium
         belongs_to :credit_card, :dependent => :destroy, :class_name => "FreemiumCreditCard"
         has_many :coupon_redemptions, :conditions => "expired_on IS NULL", :class_name => "FreemiumCouponRedemption", :foreign_key => :subscription_id
         has_many :coupons, :through => :coupon_redemptions, :conditions => "coupon_redemptions.expired_on IS NULL"
+  
+        # Auditing
+        has_many :transactions, :class_name => "FreemiumTransaction", :foreign_key => :subscription_id
               
         before_validation :set_paid_through
         before_validation :set_started_on
         before_save :store_credit_card_offsite
         before_save :discard_credit_card_unless_paid
         before_destroy :cancel_in_remote_system
+        
+        after_create :audit_create
+        after_update :audit_update
+        after_destroy :audit_destroy
            
         validates_presence_of :subscribable
         validates_associated :subscribable
@@ -91,6 +98,39 @@ module Freemium
       end
     end
     
+    ##
+    ## Callbacks :: Auditing
+    ##    
+    
+    def audit_create
+      FreemiumSubscriptionChange.create(:reason => "new", 
+                                         :subscribable => self.subscribable,
+                                         :new_subscription_plan_id => self.subscription_plan_id)
+    end
+    
+    def audit_update
+      if self.subscription_plan_id_changed?
+        plans = self.changes["subscription_plan_id"].collect{|id| FreemiumSubscriptionPlan.find(id)}
+        return if plans.compact.size < 2 # skip if we can't find both plans
+        
+        original_plan, new_plan = plans[0], plans[1]
+        # Skip if both plans are the same price or from the same feature set
+        return if original_plan.rate == new_plan.rate || original_plan.feature_set_id == new_plan.feature_set_id
+        
+        reason = original_plan.rate > new_plan.rate ? (self.expired? ? "expiration" : "downgrade") : "upgrade"
+        FreemiumSubscriptionChange.create(:reason => reason,
+                                          :subscribable => self.subscribable,
+                                          :original_subscription_plan_id => original_plan.id,
+                                          :new_subscription_plan_id => new_plan.id)
+      end
+    end
+    
+    def audit_destroy
+      FreemiumSubscriptionChange.create(:reason => "cancellation", 
+                                        :subscribable => self.subscribable,
+                                        :original_subscription_plan_id => self.subscription_plan_id)
+    end
+    
     public
     
     ##
@@ -156,8 +196,8 @@ module Freemium
     ##
 
     # receives payment and saves the record
-    def receive_payment!(value)
-      receive_payment(value)
+    def receive_payment!(amount, transaction = nil)
+      receive_payment(amount, transaction)
       save!
     end
 
@@ -200,18 +240,18 @@ module Freemium
     ##
 
     # sets the expiration for the subscription based on today and the configured grace period.
-    def expire_after_grace!
+    def expire_after_grace!(transaction = nil)
       self.expire_on = [Date.today, paid_through].max + Freemium.days_grace
-      Freemium.activity_log[self] << "now set to expire on #{self.expire_on}" if Freemium.log?
+      transaction.message = "now set to expire on #{self.expire_on}" if transaction
       Freemium.mailer.deliver_expiration_warning(subscribable, self)
       save!
     end
 
     # sends an expiration email, then downgrades to a free plan
     def expire!
-      Freemium.activity_log[self] << "expired!" if Freemium.log?
       Freemium.mailer.deliver_expiration_notice(subscribable, self)
       # downgrade to a free plan
+      self.expire_on = Date.today
       self.subscription_plan = Freemium.expired_plan
       # throw away this credit card (they'll have to start all over again)
       self.save!
@@ -222,27 +262,26 @@ module Freemium
     end
 
     protected
-
+    
     # extends the paid_through period according to how much money was received.
     # when possible, avoids the days-per-month problem by checking if the money
     # received is a multiple of the plan's rate.
     #
     # really, i expect the case where the received payment does not match the
     # subscription plan's rate to be very much an edge case.
-    def receive_payment(value)
-      self.paid_through = if value.cents % rate.cents == 0
-        self.paid_through + (value.cents / rate.cents).months
+    def receive_payment(amount, transaction = nil)
+      self.paid_through = if amount.cents % rate.cents == 0
+        self.paid_through + (amount.cents / rate.cents).months
       else
         # edge case
-        self.paid_through + (value.cents / daily_rate.cents)
+        self.paid_through + (amount.cents / daily_rate.cents)
       end
       
       # if they've paid again, then reset expiration
       self.expire_on = nil
+      transaction.message = "now paid through #{self.paid_through}" if transaction
 
-      Freemium.activity_log[self] << "now paid through #{self.paid_through}" if Freemium.log?
-
-      send_invoice(value)
+      send_invoice(amount)
     end
 
   end

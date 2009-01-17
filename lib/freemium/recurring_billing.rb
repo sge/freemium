@@ -8,20 +8,19 @@ module Freemium
     module ClassMethods
       # the process you should run periodically
       def run_billing
-        Freemium.with_activity_logging do
-          # first, synchronize transactions
-          process_new_transactions
-          # then, set expiration for any subscriptions that didn't process
-          find_expirable.each(&:expire_after_grace!)
-          # then, actually expire any subscriptions whose time has come
-          expire
+        # first, synchronize transactions
+        transactions = process_transactions
+        
+        # then, set expiration for any subscriptions that didn't process
+        find_expirable.each(&:expire_after_grace!)
+        # then, actually expire any subscriptions whose time has come
+        expire
 
-          # send the activity report
-          Freemium.mailer.deliver_admin_report(
-            Freemium.admin_report_recipients,
-            Freemium.activity_log
-          ) if Freemium.admin_report_recipients
-        end
+        # send the activity report
+        Freemium.mailer.deliver_admin_report(
+          Freemium.admin_report_recipients,
+          transactions
+        ) if Freemium.admin_report_recipients && !new_transactions.empty?
       end
 
       protected
@@ -37,14 +36,15 @@ module Freemium
       end
 
       # updates all subscriptions with any new transactions
-      def process_new_transactions
+      def process_transactions(transactions = new_transactions)
         transaction do
-          new_transactions.each do |t|
-            subscription = FreemiumSubscription.find_by_billing_key(t.billing_key)
-            Freemium.activity_log[subscription] << t if Freemium.log?
-            t.success? ? subscription.receive_payment!(t.amount) : subscription.expire_after_grace!
+          transactions.each do |transaction|
+            subscription = FreemiumSubscription.find_by_billing_key(transaction.billing_key)
+            subscription.transactions << transaction
+            transaction.success? ? subscription.receive_payment!(transaction.amount, transaction) : subscription.expire_after_grace!(transaction)
           end
         end
+        transactions
       end
 
       # finds all subscriptions that should have paid but didn't and need to be expired

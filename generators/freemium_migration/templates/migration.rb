@@ -46,6 +46,24 @@ class CreateFreemiumModels < ActiveRecord::Migration
       t.column :redeemed_on, :date, :null => false 
       t.column :expired_on, :date, :null => true
     end   
+    
+    create_table :freemium_transactions, :force => true do |t|  
+      t.column :subscription_id, :integer, :null => false
+      t.column :success, :boolean, :null => false 
+      t.column :billing_key, :string, :null => false
+      t.column :amount_cents, :integer, :null => false
+      t.column :message, :string, :null => true
+      t.column :created_at, :timestamp, :null => false
+    end  
+
+    create_table :freemium_subscription_changes, :force => true do |t|  
+      t.column :subscribable_id, :integer, :null => false
+      t.column :subscribable_type, :string, :null => false
+      t.column :original_subscription_plan_id, :integer, :null => true
+      t.column :new_subscription_plan_id, :integer, :null => true
+      t.column :reason, :string, :null => false 
+      t.column :created_at, :timestamp, :null => false
+    end    
 
     # for applying transactions from automated recurring billing
     add_index :freemium_subscription_plans, :key
@@ -66,7 +84,12 @@ class CreateFreemiumModels < ActiveRecord::Migration
     add_index :freemium_coupons_subscription_plans, :coupon_id, :name => :on_coupon_id
     add_index :freemium_coupons_subscription_plans, :subscription_plan_id, :name => :on_subscription_plan_id
     
-    add_index :freemium_coupon_redemptions, :subscription_id    
+    add_index :freemium_coupon_redemptions, :subscription_id 
+    
+    add_index :freemium_transactions, :subscription_id   
+    
+    add_index :freemium_subscription_changes, :reason
+    add_index :freemium_subscription_changes, [:subscribable_id, :subscribable_type], :name => :on_subscribable_id_and_type
   end
 
   def self.down
@@ -76,5 +99,7 @@ class CreateFreemiumModels < ActiveRecord::Migration
     drop_table :freemium_coupons
     drop_table :freemium_coupons_subscription_plans
     drop_table :freemium_coupon_redemptions
+    drop_table :freemium_transactions
+    drop_table :freemium_subscription_changes
   end
 end

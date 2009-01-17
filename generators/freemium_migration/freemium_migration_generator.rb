@@ -10,7 +10,7 @@ class FreemiumMigrationGenerator < Rails::Generator::NamedBase
       m.template "config.rb", "config/initializers/freemium.rb"
       m.template "freemium_feature_sets.yml", "config/freemium_feature_sets.yml"
 
-      %w(coupon coupon_redemption credit_card subscription subscription_plan).each do |model|
+      %w(coupon coupon_redemption credit_card subscription subscription_plan subscription_change transaction).each do |model|
         m.template "#{model}.rb", "app/models/freemium_#{model}.rb"
       end
     end

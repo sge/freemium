@@ -11,6 +11,8 @@ class SubscriptionTest < Test::Unit::TestCase
     assert_equal Date.today, subscription.reload.started_on
     assert_nil subscription.paid_through
     assert !subscription.paid?
+    
+    assert_changed(subscription.subscribable, :new, nil, freemium_subscription_plans(:free))
   end
   
   def test_creating_paid_subscription
@@ -25,6 +27,8 @@ class SubscriptionTest < Test::Unit::TestCase
     assert_equal Date.today + Freemium.days_free_trial, subscription.paid_through
     assert subscription.paid?
     assert_not_nil subscription.billing_key
+    
+    assert_changed(subscription.subscribable, :new, nil, freemium_subscription_plans(:basic))
   end  
   
   def test_upgrade_from_free
@@ -43,6 +47,8 @@ class SubscriptionTest < Test::Unit::TestCase
     assert_equal new_date, subscription.paid_through
     assert subscription.paid?
     assert_not_nil subscription.billing_key    
+    
+    assert_changed(subscription.subscribable, :upgrade, freemium_subscription_plans(:free), freemium_subscription_plans(:basic))
   end
   
   def test_downgrade
@@ -60,6 +66,8 @@ class SubscriptionTest < Test::Unit::TestCase
     assert !subscription.paid?
     assert_nil subscription.billing_key 
     assert_nil subscription.credit_card   
+    
+    assert_changed(subscription.subscribable, :downgrade, freemium_subscription_plans(:basic), freemium_subscription_plans(:free))
   end
 
   def test_associations
@@ -158,6 +166,8 @@ class SubscriptionTest < Test::Unit::TestCase
     assert_equal freemium_subscription_plans(:free), freemium_subscriptions(:bobs_subscription).subscription_plan, "subscription is downgraded to free"
     assert_nil freemium_subscriptions(:bobs_subscription).billing_key, "billing key is thrown away"
     assert_nil freemium_subscriptions(:bobs_subscription).reload.billing_key, "billing key is thrown away"
+    
+    assert_changed(freemium_subscriptions(:bobs_subscription).subscribable, :expiration, freemium_subscription_plans(:basic), freemium_subscription_plans(:free))    
   end
 
   def test_class_expire
@@ -172,6 +182,8 @@ class SubscriptionTest < Test::Unit::TestCase
     assert_equal freemium_subscription_plans(:free), freemium_subscriptions(:bobs_subscription).reload.subscription_plan
     assert_equal Date.today, freemium_subscriptions(:bobs_subscription).reload.started_on
     assert ActionMailer::Base.deliveries.size > 0
+    
+    assert_changed(freemium_subscriptions(:bobs_subscription).subscribable, :expiration, freemium_subscription_plans(:basic), freemium_subscription_plans(:free)) 
   end
 
   def test_expire_after_grace_sends_warning
@@ -180,6 +192,7 @@ class SubscriptionTest < Test::Unit::TestCase
     
     assert_equal 1, ActionMailer::Base.deliveries.size
   end
+  
   def test_expire_after_grace
     assert_nil freemium_subscriptions(:bobs_subscription).expire_on
     freemium_subscriptions(:bobs_subscription).paid_through = Date.today - 1
@@ -230,6 +243,8 @@ class SubscriptionTest < Test::Unit::TestCase
   def test_deleting_cancels_in_gateway
     Freemium.gateway.expects(:cancel).once.returns(nil)
     freemium_subscriptions(:bobs_subscription).destroy
+    
+    assert_changed(freemium_subscriptions(:bobs_subscription).subscribable, :cancellation, freemium_subscription_plans(:basic), nil)    
   end
 
   ##
@@ -292,6 +307,14 @@ class SubscriptionTest < Test::Unit::TestCase
       :subscription_plan => freemium_subscription_plans(:free),
       :subscribable => users(:sue)
     }.merge(options))    
+  end
+  
+  def assert_changed(subscribable, reason, original_plan, new_plan)
+    changes = FreemiumSubscriptionChange.find(:all, :conditions => ["subscribable_id = ? AND subscribable_type = ?", subscribable.id, subscribable.class.to_s]).last
+    assert_not_nil changes
+    assert_equal reason.to_s, changes.reason
+    assert_equal original_plan, changes.original_subscription_plan
+    assert_equal new_plan, changes.new_subscription_plan
   end
   
 end
