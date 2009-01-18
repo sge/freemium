@@ -9,6 +9,7 @@ class SubscriptionTest < Test::Unit::TestCase
     
     assert !subscription.new_record?, subscription.errors.full_messages.to_sentence
     assert_equal Date.today, subscription.reload.started_on
+    assert_equal false, subscription.in_trial?
     assert_nil subscription.paid_through
     assert !subscription.paid?
     
@@ -23,6 +24,7 @@ class SubscriptionTest < Test::Unit::TestCase
 
     assert !subscription.new_record?, subscription.errors.full_messages.to_sentence
     assert_equal Date.today, subscription.reload.started_on
+    assert_equal true, subscription.in_trial?
     assert_not_nil subscription.paid_through
     assert_equal Date.today + Freemium.days_free_trial, subscription.paid_through
     assert subscription.paid?
@@ -34,16 +36,18 @@ class SubscriptionTest < Test::Unit::TestCase
   def test_upgrade_from_free
     subscription = build_subscription(:subscription_plan => freemium_subscription_plans(:free))
     subscription.save!
-    
+        
     new_date = Date.today + 10.days
     Date.stubs(:today).returns(new_date)
     
+    assert_equal false, subscription.in_trial?
     subscription.subscription_plan = freemium_subscription_plans(:basic)
-    subscription.credit_card = FreemiumCreditCard.sample    
+    subscription.credit_card = FreemiumCreditCard.sample 
     subscription.save!
     
     assert_equal new_date, subscription.reload.started_on
     assert_not_nil subscription.paid_through
+    assert_equal false, subscription.in_trial?
     assert_equal new_date, subscription.paid_through
     assert subscription.paid?
     assert_not_nil subscription.billing_key    
@@ -83,6 +87,36 @@ class SubscriptionTest < Test::Unit::TestCase
     assert_equal Money.new(840), freemium_subscriptions(:bobs_subscription).remaining_value
   end
 
+  ##
+  ## Upgrade / Downgrade service credits
+  ##
+
+  def test_upgrade_credit
+    subscription = freemium_subscriptions(:bobs_subscription)
+    new_plan = freemium_subscription_plans(:premium)
+
+    assert subscription.remaining_value.cents > 0
+    expected_paid_through = Date.today + (subscription.remaining_value.cents / new_plan.daily_rate.cents)
+    subscription.subscription_plan = freemium_subscription_plans(:premium)
+    subscription.save!
+    
+    assert_equal expected_paid_through, subscription.paid_through
+  end
+  
+  def test_upgrade_no_credit_for_free_trial
+    subscription = build_subscription(:subscription_plan => freemium_subscription_plans(:premium), :credit_card => FreemiumCreditCard.sample)
+    subscription.save!
+    
+    assert_equal Date.today + Freemium.days_free_trial, subscription.paid_through
+    assert_equal true, subscription.in_trial?
+    
+    subscription.subscription_plan = freemium_subscription_plans(:basic)
+    subscription.save!
+    
+    assert_equal Date.today, subscription.paid_through
+    assert_equal false, subscription.in_trial?
+  end
+  
   ##
   ## Validations
   ##

@@ -75,6 +75,9 @@ class CouponRedemptionTest < Test::Unit::TestCase
     @coupon.duration_in_months = 3
     @coupon.save!
     
+    assert_equal @coupon.discount(@original_price).cents, @subscription.rate({:date => (Date.today + 3.months - 1)}).cents
+    assert_equal @original_price.cents, @subscription.rate({:date => (Date.today + 3.months + 1)}).cents
+    
     safe_date = Date.today + 3.months - 1
     Date.stubs(:today).returns(safe_date)
     assert_equal @coupon.discount(@original_price).cents, @subscription.rate.cents

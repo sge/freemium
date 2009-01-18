@@ -22,6 +22,7 @@ ActiveRecord::Schema.define(:version => 1) do
     t.column :billing_key, :string, :null => true
     t.column :started_on, :date, :null => true
     t.column :last_transaction_at, :datetime, :null => true
+    t.column :in_trial, :boolean, :null => false, :default => false
   end
   
   create_table :freemium_credit_cards, :force => true do |t|

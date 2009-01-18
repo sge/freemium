@@ -41,6 +41,10 @@ module Freemium
       base.extend ClassMethods
     end
     
+    def original_plan
+      @original_plan ||= FreemiumSubscriptionPlan.find(self.changes["subscription_plan_id"].first) if subscription_plan_id_changed?
+    end
+    
     ##
     ## Callbacks
     ##
@@ -48,15 +52,28 @@ module Freemium
     protected
 
     def set_paid_through
-      # no prorations or trial periods when changing plans
       if subscription_plan_id_changed? && !paid_through_changed?
         if paid?
-          self.paid_through = Date.today
-          self.paid_through += Freemium.days_free_trial if new_record?
+          if new_record?
+            # paid + new subscription = in free trial
+            self.paid_through = Date.today + Freemium.days_free_trial
+            self.in_trial = true
+          elsif !self.in_trial? && self.original_plan && self.original_plan.paid?
+            # paid + not in trial + not new subscription + original sub was paid = calculate and credit for remaining value
+            value = self.remaining_value(original_plan)
+            self.paid_through = Date.today
+            self.credit(value)
+          else
+            # otherwise payment is due today
+            self.paid_through = Date.today
+            self.in_trial = false
+          end
         else
+          # free plans don't pay
           self.paid_through = nil
         end
       end
+      true
     end    
 
     def set_started_on
@@ -110,18 +127,12 @@ module Freemium
     
     def audit_update
       if self.subscription_plan_id_changed?
-        plans = self.changes["subscription_plan_id"].collect{|id| FreemiumSubscriptionPlan.find(id)}
-        return if plans.compact.size < 2 # skip if we can't find both plans
-        
-        original_plan, new_plan = plans[0], plans[1]
-        # Skip if both plans are the same price or from the same feature set
-        return if original_plan.rate == new_plan.rate || original_plan.feature_set_id == new_plan.feature_set_id
-        
-        reason = original_plan.rate > new_plan.rate ? (self.expired? ? "expiration" : "downgrade") : "upgrade"
+        return if self.original_plan.nil?
+        reason = self.original_plan.rate > self.subscription_plan.rate ? (self.expired? ? "expiration" : "downgrade") : "upgrade"
         FreemiumSubscriptionChange.create(:reason => reason,
                                           :subscribable => self.subscribable,
-                                          :original_subscription_plan_id => original_plan.id,
-                                          :new_subscription_plan_id => new_plan.id)
+                                          :original_subscription_plan_id => self.original_plan.id,
+                                          :new_subscription_plan_id => self.subscription_plan.id)
       end
     end
     
@@ -148,11 +159,13 @@ module Freemium
     ## Rate
     ##
     
-    def rate(date = Date.today)
-      return nil unless subscription_plan
-      rate = self.subscription_plan.rate
-      rate = self.coupon(date).discount(rate) if coupon
-      rate
+    def rate(options = {})
+      options = {:date => Date.today, :plan => self.subscription_plan}.merge(options)
+      
+      return nil unless options[:plan]
+      value = options[:plan].rate
+      value = self.coupon(options[:date]).discount(value) if self.coupon(options[:date])
+      value
     end
     
     def paid?
@@ -213,8 +226,9 @@ module Freemium
 
     # returns the value of the time between now and paid_through.
     # will optionally interpret the time according to a certain subscription plan.
-    def remaining_value(subscription_plan_id = self.subscription_plan_id)
-      self.daily_rate * remaining_days
+    def remaining_value(plan = self.subscription_plan)
+#      return 0 unless remaining_days
+      self.daily_rate(:plan => plan) * remaining_days
     end
 
     # if paid through today, returns zero
@@ -270,18 +284,21 @@ module Freemium
     # really, i expect the case where the received payment does not match the
     # subscription plan's rate to be very much an edge case.
     def receive_payment(amount, transaction = nil)
-      self.paid_through = if amount.cents % rate.cents == 0
-        self.paid_through + (amount.cents / rate.cents).months
-      else
-        # edge case
-        self.paid_through + (amount.cents / daily_rate.cents)
-      end
+      self.credit(amount)
       
       # if they've paid again, then reset expiration
       self.expire_on = nil
-      transaction.message = "now paid through #{self.paid_through}" if transaction
-
+      self.in_trial = false
+      transaction.message = "now paid through #{self.paid_through}"  if transaction
       send_invoice(amount)
+    end
+    
+    def credit(amount)
+      self.paid_through = if amount.cents % rate.cents == 0
+        self.paid_through + (amount.cents / rate.cents).months
+      else
+        self.paid_through + (amount.cents / daily_rate.cents).days
+      end 
     end
 
   end

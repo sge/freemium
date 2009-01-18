@@ -37,6 +37,7 @@ class RecurringBillingTest < Test::Unit::TestCase
 
     expirable = FreemiumSubscription.send(:find_expirable)
     assert expirable.all? {|subscription| subscription.paid?}, "free subscriptions don't expire"
+    assert expirable.all? {|subscription| !subscription.in_trial?}, "subscriptions that have been paid are no longer in the trial period"
     assert expirable.all? {|subscription| subscription.paid_through < Date.today}, "paid subscriptions don't expire"
     assert expirable.all? {|subscription| !subscription.expire_on or subscription.expire_on < subscription.paid_through}, "subscriptions already expiring aren't included"
     assert_equal 1, expirable.size    
