@@ -26,7 +26,6 @@ module Freemium
 
         # send the activity report
         Freemium.mailer.deliver_admin_report(
-          Freemium.admin_report_recipients,
           find_billable.collect {|s| s.transactions.last } # Add in transactions
         ) if Freemium.admin_report_recipients
       end

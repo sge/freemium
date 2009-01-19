@@ -18,7 +18,6 @@ module Freemium
 
         # send the activity report
         Freemium.mailer.deliver_admin_report(
-          Freemium.admin_report_recipients,
           transactions
         ) if Freemium.admin_report_recipients && !new_transactions.empty?
       end
