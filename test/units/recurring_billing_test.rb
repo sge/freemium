@@ -45,8 +45,11 @@ class RecurringBillingTest < Test::Unit::TestCase
 
   def test_processing_new_transactions
     subscription = freemium_subscriptions(:bobs_subscription)
+    subscription.coupon = FreemiumCoupon.create!(:description => "Complimentary", :discount_percentage => 30)
+    subscription.save!
+    
     paid_through = subscription.paid_through
-    t = FreemiumTransaction.new(:billing_key => subscription.billing_key, :amount => subscription.subscription_plan.rate, :success => true)
+    t = FreemiumTransaction.new(:billing_key => subscription.billing_key, :amount => subscription.rate, :success => true)
     FreemiumSubscription.stubs(:new_transactions).returns([t])
 
     # the actual test
@@ -57,7 +60,7 @@ class RecurringBillingTest < Test::Unit::TestCase
   def test_processing_new_transactions_multiple_months
     subscription = freemium_subscriptions(:bobs_subscription)
     paid_through = subscription.paid_through = Date.parse("2009-01-31 00:00:00")
-    t = FreemiumTransaction.new(:billing_key => subscription.billing_key, :amount => subscription.subscription_plan.rate, :success => true)
+    t = FreemiumTransaction.new(:billing_key => subscription.billing_key, :amount => subscription.rate, :success => true)
     FreemiumSubscription.stubs(:new_transactions).returns([t,t])
 
     # the actual test
@@ -68,7 +71,7 @@ class RecurringBillingTest < Test::Unit::TestCase
   def test_processing_a_failed_transaction
     subscription = freemium_subscriptions(:bobs_subscription)
     paid_through = subscription.paid_through
-    t = FreemiumTransaction.new(:billing_key => subscription.billing_key, :amount => subscription.subscription_plan.rate, :success => false)
+    t = FreemiumTransaction.new(:billing_key => subscription.billing_key, :amount => subscription.rate, :success => false)
     FreemiumSubscription.stubs(:new_transactions).returns([t])
 
     # the actual test

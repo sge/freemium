@@ -10,7 +10,7 @@ module Freemium
     def charge!
       self.class.transaction do
         # attempt to bill (use gateway)
-        transaction = Freemium.gateway.charge(billing_key, subscription_plan.rate)
+        transaction = Freemium.gateway.charge(billing_key, self.rate)
         transactions << transaction
         transaction.success? ? receive_payment!(transaction.amount, transaction) : expire_after_grace!(transaction)
       end

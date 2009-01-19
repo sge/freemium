@@ -29,11 +29,15 @@ class ManualBillingTest < Test::Unit::TestCase
 
   def test_charging_a_subscription
     subscription = FreemiumSubscription.find(:first)
+    subscription.coupon = FreemiumCoupon.create!(:description => "Complimentary", :discount_percentage => 30)
+    subscription.save!
+    
     paid_through = subscription.paid_through
+
     Freemium.gateway.stubs(:charge).returns(
       FreemiumTransaction.new(
         :billing_key => subscription.billing_key,
-        :amount => subscription.subscription_plan.rate,
+        :amount => subscription.rate,
         :success => true
       )
     )
@@ -44,7 +48,7 @@ class ManualBillingTest < Test::Unit::TestCase
     assert subscription.transactions.last.success?
     assert_not_nil subscription.transactions.last.message?
     assert !FreemiumTransaction.since(Date.today).empty?
-    assert_equal subscription.subscription_plan.rate, subscription.transactions.last.amount
+    assert_equal subscription.rate, subscription.transactions.last.amount
     assert_equal (paid_through >> 1).to_s, subscription.reload.paid_through.to_s, "extended by a month"
   end
 
@@ -54,7 +58,7 @@ class ManualBillingTest < Test::Unit::TestCase
     Freemium.gateway.stubs(:charge).returns(
       FreemiumTransaction.new(
         :billing_key => subscription.billing_key,
-        :amount => subscription.subscription_plan.rate,
+        :amount => subscription.rate,
         :success => false
       )
     )
