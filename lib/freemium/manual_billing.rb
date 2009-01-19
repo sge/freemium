@@ -10,9 +10,10 @@ module Freemium
     def charge!
       self.class.transaction do
         # attempt to bill (use gateway)
-        transaction = Freemium.gateway.charge(billing_key, self.rate)
-        transactions << transaction
-        transaction.success? ? receive_payment!(transaction.amount, transaction) : expire_after_grace!(transaction)
+        @transaction = Freemium.gateway.charge(billing_key, self.rate)
+        self.transactions << @transaction
+        @transaction.success? ? receive_payment!(@transaction.amount, transaction) : expire_after_grace!(@transaction)
+        @transaction
       end
     end
 
@@ -20,14 +21,16 @@ module Freemium
       # the process you should run periodically
       def run_billing
         # charge all billable subscriptions
-        find_billable.each(&:charge!)
+        @transactions = find_billable.collect{|b| b.charge!}
         # actually expire any subscriptions whose time has come
         expire
 
         # send the activity report
         Freemium.mailer.deliver_admin_report(
-          find_billable.collect {|s| s.transactions.last } # Add in transactions
+          @transactions # Add in transactions
         ) if Freemium.admin_report_recipients
+        
+        @transactions
       end
 
       protected

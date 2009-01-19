@@ -8,8 +8,6 @@ class ManualBillingTest < Test::Unit::TestCase
   end
 
   def test_find_billable
-    FreemiumSubscription.any_instance.stubs(:charge!).returns(true)
-
     # making a one-off fixture set, basically
     create_billable_subscription # this subscription should be billable
     create_billable_subscription(:paid_through => Date.today) # this subscription should be billable
@@ -25,6 +23,8 @@ class ManualBillingTest < Test::Unit::TestCase
     assert expirable.all? {|subscription| subscription.paid_through <= Date.today}, "subscriptions paid through tomorrow aren't billable yet"
     assert expirable.all? {|subscription| !subscription.expire_on or subscription.expire_on < subscription.paid_through}, "subscriptions already expiring aren't billable"
     assert_equal 2, expirable.size
+    
+    assert_equal expirable.size, FreemiumSubscription.run_billing.size
   end
 
   def test_charging_a_subscription
