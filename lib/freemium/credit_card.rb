@@ -173,10 +173,6 @@ module Freemium
     def name
       "#{@first_name} #{@last_name}"
     end
-          
-    def verification_value?
-      !@verification_value.blank?
-    end
 
     # Show the card number, with all but last 4 numbers replace with "X". (XXXX-XXXX-XXXX-4338)
     def display_number
@@ -211,7 +207,6 @@ module Freemium
 
       validate_card_type
       validate_card_number
-      validate_verification_value
       validate_switch_or_solo_attributes
     end
     
@@ -246,10 +241,6 @@ module Freemium
         end
       end
     end
-    
-    def validate_verification_value #:nodoc:
-      errors.add :verification_value, "is required" unless verification_value? 
-    end    
     
     def valid_month?(month)
       (1..12).include?(month)
