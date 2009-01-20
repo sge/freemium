@@ -33,11 +33,12 @@ fixtures :users, :freemium_subscriptions, :freemium_subscription_plans, :freemiu
     original_key = @subscription.billing_key
     original_expiration = @subscription.credit_card.expiration_date
     
-    @subscription.credit_card = FreemiumCreditCard.new(FreemiumCreditCard.sample_params.merge(:number => "5431111111111111", :card_type => "master", :year => 2020))
+    @subscription.credit_card = FreemiumCreditCard.new(FreemiumCreditCard.sample_params.merge(:zip_code => 95060, :number => "5431111111111111", :card_type => "master", :year => 2020))
     assert @subscription.save
     @subscription = FreemiumSubscription.find(@subscription.id)
     assert_equal original_key, @subscription.billing_key
     assert @subscription.credit_card.expiration_date > original_expiration
+    assert_equal "95060", @subscription.credit_card.reload.zip_code
   end
     
   ##

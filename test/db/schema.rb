@@ -29,6 +29,7 @@ ActiveRecord::Schema.define(:version => 1) do
     t.column :display_number, :string, :null => false
     t.column :card_type, :string, :null => false
     t.column :expiration_date, :timestamp, :null => false
+    t.column :zip_code, :string, :null => true
   end  
   
   create_table :freemium_coupons, :force => true do |t|  
