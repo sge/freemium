@@ -41,10 +41,6 @@ module Freemium
       base.extend ClassMethods
     end
     
-    def original_plan
-      @original_plan ||= FreemiumSubscriptionPlan.find(self.changes["subscription_plan_id"].first) if subscription_plan_id_changed?
-    end
-    
     ##
     ## Callbacks
     ##
@@ -113,6 +109,10 @@ module Freemium
         Freemium.gateway.cancel(self.billing_key)
         self.billing_key = nil
       end
+    end
+
+    def original_plan
+      @original_plan ||= FreemiumSubscriptionPlan.find(self.changes["subscription_plan_id"].first) if subscription_plan_id_changed?
     end
     
     ##

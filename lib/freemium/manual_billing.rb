@@ -12,6 +12,7 @@ module Freemium
         # attempt to bill (use gateway)
         @transaction = Freemium.gateway.charge(billing_key, self.rate)
         self.transactions << @transaction
+        self.last_transaction_at = Time.now # TODO this could probably now be inferred from the list of transactions
         @transaction.success? ? receive_payment!(@transaction.amount, transaction) : expire_after_grace!(@transaction)
         @transaction
       end

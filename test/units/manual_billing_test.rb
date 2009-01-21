@@ -47,6 +47,7 @@ class ManualBillingTest < Test::Unit::TestCase
     assert subscription.transactions.last
     assert subscription.transactions.last.success?
     assert_not_nil subscription.transactions.last.message?
+    assert (Time.now - 1.minute) < subscription.last_transaction_at
     assert !FreemiumTransaction.since(Date.today).empty?
     assert_equal subscription.rate, subscription.transactions.last.amount
     assert_equal (paid_through >> 1).to_s, subscription.reload.paid_through.to_s, "extended by a month"
