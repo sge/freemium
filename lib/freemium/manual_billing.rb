@@ -4,13 +4,18 @@ module Freemium
     def self.included(base)
       base.extend ClassMethods
     end
+    
+    # Override if you need to charge something different than the rate (ex: yearly billing option)
+    def charge_amount
+      self.rate
+    end
 
     # charges this subscription.
     # assumes, of course, that this module is mixed in to the Subscription model
     def charge!
       self.class.transaction do
         # attempt to bill (use gateway)
-        @transaction = Freemium.gateway.charge(billing_key, self.rate)
+        @transaction = Freemium.gateway.charge(billing_key, self.charge_amount)
         self.transactions << @transaction
         self.last_transaction_at = Time.now # TODO this could probably now be inferred from the list of transactions
         @transaction.success? ? receive_payment!(@transaction.amount, transaction) : expire_after_grace!(@transaction)
