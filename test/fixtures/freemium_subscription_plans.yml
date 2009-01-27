@@ -1,18 +1,18 @@
 free:
   id: 1
-  key: free
+  redemption_key: free
   feature_set_id: free
   name: Free Access
   rate_cents: 0
 basic:
   id: 2
-  key: basic
+  redemption_key: basic
   feature_set_id: basic
   name: Basic
   rate_cents: 1295
 premium:
   id: 3
-  key: premium
+  redemption_key: premium
   feature_set_id: premium
   name: Premium
   rate_cents: 2495

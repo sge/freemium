@@ -40,6 +40,7 @@ class SubscriptionPlanTest < Test::Unit::TestCase
   def create_plan(options = {})
     FreemiumSubscriptionPlan.create({
       :name => 'super-duper-ultra-premium',
+      :redemption_key => 'super-duper-ultra-premium',
       :rate_cents => 99995,
       :feature_set_id => :premium
     }.merge(options))

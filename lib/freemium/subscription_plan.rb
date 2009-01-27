@@ -18,23 +18,14 @@ module Freemium
         
         composed_of :rate, :class_name => 'Money', :mapping => [ %w(rate_cents cents) ], :allow_nil => true
         
-        validates_uniqueness_of :key
+        validates_uniqueness_of :redemption_key, :allow_nil => true, :allow_blank => true
         validates_presence_of :name
-        validates_presence_of :key
         validates_presence_of :rate_cents
-        
-        before_validation :set_key
       end
     end
     
     def features
       Freemium::FeatureSet.find(self.feature_set_id)
-    end
-    
-    protected
-    
-    def set_key      
-      self.key ||= ActiveSupport::Inflector.underscore(name) unless name.blank?
     end
     
   end

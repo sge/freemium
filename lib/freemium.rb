@@ -43,7 +43,7 @@ module Freemium
     attr_writer :expired_plan
     def expired_plan
       unless @expired_plan 
-        @expired_plan =   FreemiumSubscriptionPlan.find_by_key(expired_plan_key.to_s) unless expired_plan_key.nil?
+        @expired_plan =   FreemiumSubscriptionPlan.find_by_redemption_key(expired_plan_key.to_s) unless expired_plan_key.nil?
         @expired_plan ||= FreemiumSubscriptionPlan.find(:first, :conditions => "rate_cents = 0")
       end
       @expired_plan

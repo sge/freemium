@@ -171,7 +171,7 @@ module Freemium
     def paid?
       return false unless rate
       rate.cents > 0
-    end
+    end  
     
     ##
     ## Coupon Redemption
