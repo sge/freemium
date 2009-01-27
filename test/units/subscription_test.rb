@@ -289,7 +289,7 @@ class SubscriptionTest < Test::Unit::TestCase
     cc = FreemiumCreditCard.sample
     response = Freemium::Response.new(true)
     response.billing_key = "alphabravo"
-    Freemium.gateway.expects(:store).with(cc).returns(response)
+    Freemium.gateway.expects(:store).with(cc, cc.address).returns(response)
 
     subscription.credit_card = cc
     assert_nothing_raised do subscription.save! end
@@ -301,7 +301,7 @@ class SubscriptionTest < Test::Unit::TestCase
     cc = FreemiumCreditCard.sample
     response = Freemium::Response.new(true)
     response.billing_key = "new code"
-    Freemium.gateway.expects(:update).with(subscription.billing_key, cc).returns(response)
+    Freemium.gateway.expects(:update).with(subscription.billing_key, cc, cc.address).returns(response)
 
     subscription.credit_card = cc
     assert_nothing_raised do subscription.save! end
@@ -312,7 +312,7 @@ class SubscriptionTest < Test::Unit::TestCase
     subscription = FreemiumSubscription.find(:first, :conditions => "billing_key IS NOT NULL")    
     cc = FreemiumCreditCard.sample
     response = Freemium::Response.new(true)
-    Freemium.gateway.expects(:update).with(subscription.billing_key, cc).returns(response)
+    Freemium.gateway.expects(:update).with(subscription.billing_key, cc, cc.address).returns(response)
 
     subscription.expire_on = Time.now
     assert subscription.save

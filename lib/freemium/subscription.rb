@@ -41,6 +41,10 @@ module Freemium
       base.extend ClassMethods
     end
     
+    def original_plan
+      @original_plan ||= FreemiumSubscriptionPlan.find(self.changes["subscription_plan_id"].first) if subscription_plan_id_changed?
+    end
+    
     ##
     ## Callbacks
     ##
@@ -89,7 +93,7 @@ module Freemium
     # with an "address" property on the credit card.
     def store_credit_card_offsite
       if credit_card && credit_card.changed? && credit_card.valid? 
-        response = billing_key ? Freemium.gateway.update(billing_key, credit_card) : Freemium.gateway.store(credit_card)
+        response = billing_key ? Freemium.gateway.update(billing_key, credit_card, credit_card.address) : Freemium.gateway.store(credit_card, credit_card.address)
         raise Freemium::CreditCardStorageError.new(response.message) unless response.success?
         self.billing_key = response.billing_key
         self.expire_on = nil
@@ -109,10 +113,6 @@ module Freemium
         Freemium.gateway.cancel(self.billing_key)
         self.billing_key = nil
       end
-    end
-
-    def original_plan
-      @original_plan ||= FreemiumSubscriptionPlan.find(self.changes["subscription_plan_id"].first) if subscription_plan_id_changed?
     end
     
     ##

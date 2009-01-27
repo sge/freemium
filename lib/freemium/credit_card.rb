@@ -184,6 +184,18 @@ module Freemium
       self.class.last_digits(number)
     end
     
+    def address
+      unless @address
+        @address = Address.new
+        @address.zip = self.zip_code
+      end
+      @address
+    end
+    
+    class Address  
+      attr_accessor :email, :street, :city, :state, :zip, :country
+    end    
+    
     ##
     ## Overrides
     ##
