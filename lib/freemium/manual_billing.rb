@@ -17,9 +17,8 @@ module Freemium
       @transaction = Freemium.gateway.charge(billing_key, self.installment_amount)
       self.transactions << @transaction
       self.last_transaction_at = Time.now # TODO this could probably now be inferred from the list of transactions
-      self.save!
+      self.save(false)
       
-      #
       begin
         @transaction.success? ? receive_payment!(@transaction) : expire_after_grace!(@transaction)
       rescue => e 
@@ -40,7 +39,7 @@ module Freemium
         # send the activity report
         Freemium.mailer.deliver_admin_report(
           @transactions # Add in transactions
-        ) if Freemium.admin_report_recipients
+        ) if Freemium.admin_report_recipients && !@transactions.empty?
         
         @transactions
       end
