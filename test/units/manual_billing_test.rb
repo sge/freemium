@@ -43,6 +43,7 @@ class ManualBillingTest < Test::Unit::TestCase
     )
 
     assert_nothing_raised do subscription.charge! end
+    subscription = subscription.reload  
     assert !subscription.transactions.empty?
     assert subscription.transactions.last
     assert subscription.transactions.last.success?
@@ -52,6 +53,28 @@ class ManualBillingTest < Test::Unit::TestCase
     assert_equal subscription.rate, subscription.transactions.last.amount
     assert_equal (paid_through >> 1).to_s, subscription.reload.paid_through.to_s, "extended by a month"
   end
+  
+
+  def test_charging_a_subscription_aborted
+    subscription = FreemiumSubscription.find(:first)
+    subscription.coupon = FreemiumCoupon.create!(:description => "Complimentary", :discount_percentage => 30)
+    subscription.save!
+    
+    paid_through = subscription.paid_through
+    assert subscription.transactions.empty?
+
+    Freemium.gateway.stubs(:charge).returns(
+      FreemiumTransaction.new(
+        :billing_key => subscription.billing_key,
+        :amount => subscription.rate,
+        :success => true
+      )
+    )
+    
+    subscription.expects(:receive_payment).raises(RuntimeError,"Failed")
+    subscription.charge!
+    assert !subscription.reload.transactions.empty?    
+  end  
 
   def test_failing_to_charge_a_subscription
     subscription = FreemiumSubscription.find(:first)

@@ -138,32 +138,44 @@ class SubscriptionTest < Test::Unit::TestCase
   def test_receive_monthly_payment
     subscription = freemium_subscriptions(:bobs_subscription)
     paid_through = subscription.paid_through
-    subscription.receive_payment!(freemium_subscription_plans(:basic).rate)
-    
+    subscription.credit(freemium_subscription_plans(:basic).rate)
+    subscription.save!
     assert_equal (paid_through >> 1).to_s, subscription.paid_through.to_s, "extended by one month"
+    assert_not_nil subscription.transactions
   end
 
   def test_receive_quarterly_payment
     subscription = freemium_subscriptions(:bobs_subscription)
     paid_through = subscription.paid_through
-    subscription.receive_payment!(freemium_subscription_plans(:basic).rate * 3)
-    
+    subscription.credit(freemium_subscription_plans(:basic).rate * 3)
+    subscription.save!
     assert_equal (paid_through >> 3).to_s, subscription.paid_through.to_s, "extended by three months"
   end
 
   def test_receive_partial_payment
     subscription = freemium_subscriptions(:bobs_subscription)
     paid_through = subscription.paid_through
-    subscription.receive_payment!(freemium_subscription_plans(:basic).rate * 0.5)
-    
+    subscription.credit(freemium_subscription_plans(:basic).rate * 0.5)
+    subscription.save!
     assert_equal (paid_through + 15).to_s, subscription.paid_through.to_s, "extended by 15 days"
   end
 
   def test_receiving_payment_sends_invoice
+    subscription = freemium_subscriptions(:bobs_subscription)
     ActionMailer::Base.deliveries = []
-    freemium_subscriptions(:bobs_subscription).receive_payment!(freemium_subscription_plans(:basic).rate)
-    
+    transaction = create_transaction_for(freemium_subscription_plans(:basic).rate, subscription)
+    subscription.receive_payment!(transaction)
     assert_equal 1, ActionMailer::Base.deliveries.size
+  end
+
+  def test_receiving_payment_when_sending_invoice_asplodes
+    subscription = freemium_subscriptions(:bobs_subscription)
+    paid_through = subscription.paid_through
+    Freemium.mailer.expects(:deliver_invoice).raises(RuntimeError,"Failed")
+    transaction = create_transaction_for(freemium_subscription_plans(:basic).rate, subscription)
+    subscription.receive_payment!(transaction)
+    subscription = subscription.reload
+    assert_equal (paid_through >> 1).to_s, subscription.paid_through.to_s, "extended by one month"
   end
 
   ##
@@ -341,6 +353,10 @@ class SubscriptionTest < Test::Unit::TestCase
       :subscription_plan => freemium_subscription_plans(:free),
       :subscribable => users(:sue)
     }.merge(options))    
+  end
+  
+  def create_transaction_for(amount, subscription)
+    FreemiumTransaction.create :amount => amount, :subscription => subscription, :success => true, :billing_key => 12345
   end
   
   def assert_changed(subscribable, reason, original_plan, new_plan)

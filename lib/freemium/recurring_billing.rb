@@ -40,7 +40,7 @@ module Freemium
           transactions.each do |transaction|
             subscription = FreemiumSubscription.find_by_billing_key(transaction.billing_key)
             subscription.transactions << transaction
-            transaction.success? ? subscription.receive_payment!(transaction.amount, transaction) : subscription.expire_after_grace!(transaction)
+            transaction.success? ? subscription.receive_payment!(transaction) : subscription.expire_after_grace!(transaction)
           end
         end
         transactions

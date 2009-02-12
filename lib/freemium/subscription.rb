@@ -205,22 +205,6 @@ module Freemium
     end
 
     ##
-    ## Receiving More Money
-    ##
-
-    # receives payment and saves the record
-    def receive_payment!(amount, transaction = nil)
-      receive_payment(amount, transaction)
-      save!
-    end
-
-    # sends an invoice for the specified amount. note that this is an after-the-fact
-    # invoice.
-    def send_invoice(amount)
-      Freemium.mailer.deliver_invoice(subscribable, self, amount)
-    end
-
-    ##
     ## Remaining Time
     ##
 
@@ -257,13 +241,13 @@ module Freemium
     def expire_after_grace!(transaction = nil)
       self.expire_on = [Date.today, paid_through].max + Freemium.days_grace
       transaction.message = "now set to expire on #{self.expire_on}" if transaction
-      Freemium.mailer.deliver_expiration_warning(subscribable, self)
+      Freemium.mailer.deliver_expiration_warning(self)
       save!
     end
 
     # sends an expiration email, then downgrades to a free plan
     def expire!
-      Freemium.mailer.deliver_expiration_notice(subscribable, self)
+      Freemium.mailer.deliver_expiration_notice(self)
       # downgrade to a free plan
       self.expire_on = Date.today
       self.subscription_plan = Freemium.expired_plan
@@ -274,8 +258,22 @@ module Freemium
     def expired?
       expire_on and expire_on <= Date.today
     end
+    
+    ##
+    ## Receiving More Money
+    ##
 
-    protected
+    # receives payment and saves the record
+    def receive_payment!(transaction)
+      receive_payment(transaction)
+      self.save!
+    end
+
+    # sends an invoice for the specified amount. note that this is an after-the-fact
+    # invoice.
+    def send_invoice(transaction)
+      Freemium.mailer.deliver_invoice(transaction)
+    end    
     
     # extends the paid_through period according to how much money was received.
     # when possible, avoids the days-per-month problem by checking if the money
@@ -283,14 +281,15 @@ module Freemium
     #
     # really, i expect the case where the received payment does not match the
     # subscription plan's rate to be very much an edge case.
-    def receive_payment(amount, transaction = nil)
-      self.credit(amount)
+    def receive_payment(transaction)
+      self.credit(transaction.amount)
+      transaction.message = "now paid through #{self.paid_through}"
       
-      # if they've paid again, then reset expiration
-      self.expire_on = nil
-      self.in_trial = false
-      transaction.message = "now paid through #{self.paid_through}"  if transaction
-      send_invoice(amount)
+      begin
+        self.send_invoice(transaction)
+      rescue => e
+        transaction.message = "error sending invoice"
+      end
     end
     
     def credit(amount)
@@ -299,6 +298,14 @@ module Freemium
       else
         self.paid_through + (amount.cents / daily_rate.cents).days
       end 
+      
+      # if they've paid again, then reset expiration
+      self.expire_on = nil
+      self.in_trial = false      
+    end
+
+    def handle_exception(exception)
+      
     end
 
   end
