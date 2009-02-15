@@ -14,8 +14,8 @@ module Freemium
         belongs_to :subscription_plan, :class_name => "FreemiumSubscriptionPlan"
         belongs_to :subscribable, :polymorphic => true
         belongs_to :credit_card, :dependent => :destroy, :class_name => "FreemiumCreditCard"
-        has_many :coupon_redemptions, :conditions => "expired_on IS NULL", :class_name => "FreemiumCouponRedemption", :foreign_key => :subscription_id
-        has_many :coupons, :through => :coupon_redemptions, :conditions => "coupon_redemptions.expired_on IS NULL"
+        has_many :coupon_redemptions, :conditions => "freemium_coupon_redemptions.expired_on IS NULL", :class_name => "FreemiumCouponRedemption", :foreign_key => :subscription_id, :dependent => :destroy
+        has_many :coupons, :through => :coupon_redemptions, :conditions => "freemium_coupon_redemptions.expired_on IS NULL"
   
         # Auditing
         has_many :transactions, :class_name => "FreemiumTransaction", :foreign_key => :subscription_id
