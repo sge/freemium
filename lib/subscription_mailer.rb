@@ -24,9 +24,9 @@ class SubscriptionMailer < ActionMailer::Base
   end
   
   def admin_report(transactions)
-    setup(Freemium.admin_report_recipients, :from => from_email)
+    setup_email(Freemium.admin_report_recipients)
     @amount_charged       = transactions.select{|t| t.success?}.collect{|t| t.amount}.sum
-    @subject              = "Billing report (#{@amount_charged.format} charged)"
+    @subject              = "Billing report (#{@amount_charged} charged)"
     @body[:transactions]  = transactions
     @body[:amount_charged] = @amount_charged
   end  
