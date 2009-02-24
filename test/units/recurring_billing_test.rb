@@ -1,6 +1,6 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
-class RecurringBillingTest < Test::Unit::TestCase
+class RecurringBillingTest < ActiveSupport::TestCase
   fixtures :users, :freemium_subscriptions, :freemium_subscription_plans, :freemium_credit_cards
 
   class FreemiumSubscription < ::FreemiumSubscription

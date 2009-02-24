@@ -1,6 +1,6 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
-class CreditCardTest < Test::Unit::TestCase
+class CreditCardTest < ActiveSupport::TestCase
 fixtures :users, :freemium_subscriptions, :freemium_subscription_plans, :freemium_credit_cards
   
   def setup

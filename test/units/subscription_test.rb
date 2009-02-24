@@ -1,6 +1,6 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
-class SubscriptionTest < Test::Unit::TestCase
+class SubscriptionTest < ActiveSupport::TestCase
   fixtures :users, :freemium_subscriptions, :freemium_subscription_plans, :freemium_credit_cards
 
   def test_creating_free_subscription

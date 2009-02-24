@@ -1,6 +1,6 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
-class ManualBillingTest < Test::Unit::TestCase
+class ManualBillingTest < ActiveSupport::TestCase
   fixtures :users, :freemium_subscriptions, :freemium_subscription_plans, :freemium_credit_cards
 
   class FreemiumSubscription < ::FreemiumSubscription
@@ -51,7 +51,7 @@ class ManualBillingTest < Test::Unit::TestCase
     assert (Time.now - 1.minute) < subscription.last_transaction_at
     assert !FreemiumTransaction.since(Date.today).empty?
     assert_equal subscription.rate, subscription.transactions.last.amount
-    assert_equal (paid_through >> 1).to_s, subscription.reload.paid_through.to_s, "extended by a month"
+    assert_equal (paid_through >> 1).to_s, subscription.reload.paid_through.to_s, "extended by a month"    
   end
   
 
@@ -98,12 +98,6 @@ class ManualBillingTest < Test::Unit::TestCase
     subscription = FreemiumSubscription.find(:first)
     FreemiumSubscription.stubs(:find_billable).returns([subscription])
     subscription.expects(:charge!).once
-    FreemiumSubscription.send :run_billing
-  end
-
-  def test_run_billing_sends_report
-    Freemium.stubs(:admin_report_recipients).returns("test@example.com")
-    Freemium.mailer.expects(:deliver_admin_report)
     FreemiumSubscription.send :run_billing
   end
 

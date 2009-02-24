@@ -3,6 +3,7 @@ ENV["RAILS_ENV"] = "test"
 # load the support libraries
 require 'test/unit'
 require 'rubygems'
+gem 'rails', '2.3.0'
 require 'active_record'
 require 'active_record/fixtures'
 require 'action_mailer'
@@ -21,7 +22,9 @@ load(File.dirname(__FILE__) + "/db/schema.rb")
 $stdout = STDOUT
 
 # configure the TestCase settings
-class Test::Unit::TestCase
+class ActiveSupport::TestCase
+  include ActiveRecord::TestFixtures
+  
   self.use_transactional_fixtures = true
   self.use_instantiated_fixtures  = false
   self.fixture_path = File.dirname(__FILE__) + '/fixtures/'
