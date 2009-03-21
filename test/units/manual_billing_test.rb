@@ -42,7 +42,11 @@ class ManualBillingTest < ActiveSupport::TestCase
       )
     )
 
-    assert_nothing_raised do subscription.charge! end
+    assert_nothing_raised do 
+      transaction = subscription.charge!
+      assert_equal (paid_through >> 1).to_s, transaction.subscription.paid_through.to_s, "extended by a month"
+    end
+    
     subscription = subscription.reload  
     assert !subscription.transactions.empty?
     assert subscription.transactions.last

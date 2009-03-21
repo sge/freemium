@@ -269,12 +269,6 @@ module Freemium
       self.save!
     end
 
-    # sends an invoice for the specified amount. note that this is an after-the-fact
-    # invoice.
-    def send_invoice(transaction)
-      Freemium.mailer.deliver_invoice(transaction)
-    end    
-    
     # extends the paid_through period according to how much money was received.
     # when possible, avoids the days-per-month problem by checking if the money
     # received is a multiple of the plan's rate.
@@ -283,10 +277,12 @@ module Freemium
     # subscription plan's rate to be very much an edge case.
     def receive_payment(transaction)
       self.credit(transaction.amount)
+      self.save!
+      transaction.subscription.reload  # reloaded to that the paid_through date is correct
       transaction.message = "now paid through #{self.paid_through}"
       
       begin
-        self.send_invoice(transaction)
+        Freemium.mailer.deliver_invoice(transaction)
       rescue => e
         transaction.message = "error sending invoice"
       end
@@ -302,10 +298,6 @@ module Freemium
       # if they've paid again, then reset expiration
       self.expire_on = nil
       self.in_trial = false      
-    end
-
-    def handle_exception(exception)
-      
     end
 
   end

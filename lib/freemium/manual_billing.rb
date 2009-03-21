@@ -18,13 +18,8 @@ module Freemium
       self.transactions << @transaction
       self.last_transaction_at = Time.now # TODO this could probably now be inferred from the list of transactions
       self.save(false)
-      
-      begin
-        @transaction.success? ? receive_payment!(@transaction) : expire_after_grace!(@transaction)
-      rescue => e 
-        self.handle_exception(e)
-      end
-
+    
+      @transaction.success? ? receive_payment!(@transaction) : expire_after_grace!(@transaction) rescue nil
       @transaction
     end
 
