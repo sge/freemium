@@ -192,7 +192,6 @@ class SubscriptionTest < ActiveSupport::TestCase
 
   def test_requiring_credit_card_for_free_plan
     subscription = build_subscription
-    subscription.expects(:credit_card).never
     subscription.valid?
     
     assert !subscription.errors.on(:credit_card)
@@ -241,7 +240,7 @@ class SubscriptionTest < ActiveSupport::TestCase
   
   def test_expire_after_grace
     assert_nil freemium_subscriptions(:bobs_subscription).expire_on
-    freemium_subscriptions(:bobs_subscription).paid_through = Date.today - 1
+    freemium_subscriptions(:bobs_subscription).paid_through = Date.today - 2
     freemium_subscriptions(:bobs_subscription).expire_after_grace!
     
     assert_equal Date.today + Freemium.days_grace, freemium_subscriptions(:bobs_subscription).reload.expire_on

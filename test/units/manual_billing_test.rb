@@ -14,18 +14,64 @@ class ManualBillingTest < ActiveSupport::TestCase
     create_billable_subscription(:coupon => FreemiumCoupon.create!(:description => "Complimentary", :discount_percentage => 100)) # should NOT be billable because it's free
     create_billable_subscription(:subscription_plan => freemium_subscription_plans(:free)) # should NOT be billable because it's free
     create_billable_subscription(:paid_through => Date.today + 1) # should NOT be billable because it's paid far enough out
-    s = create_billable_subscription # should NOT be billable because it's already expiring
+    s = create_billable_subscription # should be billable because it's past due
     s.update_attribute :expire_on, Date.today + 1
 
     expirable = FreemiumSubscription.send(:find_billable)
     assert expirable.all? {|subscription| subscription.paid?}, "free subscriptions aren't billable"
     assert expirable.all? {|subscription| !subscription.in_trial?}, "subscriptions that have been paid are no longer in the trial period"
     assert expirable.all? {|subscription| subscription.paid_through <= Date.today}, "subscriptions paid through tomorrow aren't billable yet"
-    assert expirable.all? {|subscription| !subscription.expire_on or subscription.expire_on < subscription.paid_through}, "subscriptions already expiring aren't billable"
-    assert_equal 2, expirable.size
+    assert_equal 3, expirable.size
     
     assert_equal expirable.size, FreemiumSubscription.run_billing.size
   end
+  
+  def test_overdue_payment_failure
+    subscription = create_billable_subscription # should NOT be billable because it's already expiring
+    expire_on = Date.today + 2
+    paid_through = subscription.paid_through
+    subscription.update_attribute :expire_on, expire_on
+
+    expirable = FreemiumSubscription.send(:find_billable)
+    assert_equal 1, expirable.size, "Subscriptions in their grace period should be retried"
+  
+    Freemium.gateway.stubs(:charge).returns(
+      FreemiumTransaction.new(
+        :billing_key => subscription.billing_key,
+        :amount => subscription.rate,
+        :success => false
+      )
+    )
+  
+    assert_nothing_raised do 
+      transaction = subscription.charge!
+      assert_equal expire_on, subscription.expire_on, "Billing failed on existing overdue account but the expire_on date was changed"
+    end    
+  end  
+  
+  def test_overdue_payment_success
+    subscription = create_billable_subscription # should NOT be billable because it's already expiring
+    expire_on = Date.today + 2
+    paid_through = subscription.paid_through
+    subscription.update_attribute :expire_on, expire_on
+
+    expirable = FreemiumSubscription.send(:find_billable)
+    assert_equal 1, expirable.size, "Subscriptions in their grace period should be retried"
+  
+    Freemium.gateway.stubs(:charge).returns(
+      FreemiumTransaction.new(
+        :billing_key => subscription.billing_key,
+        :amount => subscription.rate,
+        :success => true
+      )
+    )
+  
+    assert_nothing_raised do 
+      transaction = subscription.charge!
+      assert_equal (paid_through >> 1).to_s, transaction.subscription.paid_through.to_s, "extended by a month"
+      assert_nil subscription.expire_on, "Billing succeeded on existing overdue account but the expire_on date was not reset"
+    end
+  end  
 
   def test_charging_a_subscription
     subscription = FreemiumSubscription.find(:first)

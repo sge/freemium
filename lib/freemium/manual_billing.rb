@@ -19,7 +19,15 @@ module Freemium
       self.last_transaction_at = Time.now # TODO this could probably now be inferred from the list of transactions
       self.save(false)
     
-      @transaction.success? ? receive_payment!(@transaction) : expire_after_grace!(@transaction) rescue nil
+      begin
+        if @transaction.success? 
+          receive_payment!(@transaction)
+        elsif !@transaction.subscription.in_grace?
+          expire_after_grace!(@transaction)
+        end
+      rescue
+      end
+      
       @transaction
     end
 
@@ -40,18 +48,12 @@ module Freemium
       end
 
       protected
-
+      
       # a subscription is due on the last day it's paid through. so this finds all
-      # subscriptions that expire the day *after* the given date. note that this
-      # also finds past-due subscriptions, as long as they haven't been set to
-      # expire.
+      # subscriptions that expire the day *after* the given date. 
       # because of coupons we can't trust rate_cents alone and need to verify that the account is indeed paid?
-      def find_billable(date = Date.today)
-        find(
-          :all,
-          :include => [:subscription_plan],
-          :conditions => ['freemium_subscription_plans.rate_cents > 0 AND paid_through <= ? AND (expire_on IS NULL or expire_on < paid_through)', date.to_date]
-        ).select{|s| s.paid?}
+      def find_billable
+        self.paid.due.select{|s| s.paid?}
       end
     end
   end

@@ -20,6 +20,10 @@ module Freemium
         # Auditing
         has_many :transactions, :class_name => "FreemiumTransaction", :foreign_key => :subscription_id
               
+        named_scope :paid, :include => [:subscription_plan], :conditions => "freemium_subscription_plans.rate_cents > 0"
+        named_scope :due, :conditions =>  ['paid_through <= ?', Date.today] # could use the concept of a next retry date
+        named_scope :expired, :conditions => ['expire_on >= paid_through AND expire_on <= ?', Date.today]
+              
         before_validation :set_paid_through
         before_validation :set_started_on
         before_save :store_credit_card_offsite
@@ -151,7 +155,7 @@ module Freemium
     module ClassMethods
       # expires all subscriptions that have been pastdue for too long (accounting for grace)
       def expire
-        find(:all, :conditions => ['expire_on >= paid_through AND expire_on <= ?', Date.today]).select{|s| s.paid?}.each(&:expire!)
+        self.expired.select{|s| s.paid?}.each(&:expire!)
       end      
     end
     
@@ -211,7 +215,6 @@ module Freemium
     # returns the value of the time between now and paid_through.
     # will optionally interpret the time according to a certain subscription plan.
     def remaining_value(plan = self.subscription_plan)
-#      return 0 unless remaining_days
       self.daily_rate(:plan => plan) * remaining_days
     end
 
@@ -239,6 +242,7 @@ module Freemium
 
     # sets the expiration for the subscription based on today and the configured grace period.
     def expire_after_grace!(transaction = nil)
+      return unless self.expired_on.nil? # You only set this once subsequent failed transactions shouldn't affect expiration
       self.expire_on = [Date.today, paid_through].max + Freemium.days_grace
       transaction.message = "now set to expire on #{self.expire_on}" if transaction
       Freemium.mailer.deliver_expiration_warning(self)
