@@ -125,8 +125,10 @@ module Freemium
     
     def audit_create
       FreemiumSubscriptionChange.create(:reason => "new", 
-                                         :subscribable => self.subscribable,
-                                         :new_subscription_plan_id => self.subscription_plan_id)
+                                        :subscribable => self.subscribable,
+                                        :new_subscription_plan_id => self.subscription_plan_id,
+                                        :new_rate => self.rate,
+                                        :original_rate => Money.empty)
     end
     
     def audit_update
@@ -136,14 +138,18 @@ module Freemium
         FreemiumSubscriptionChange.create(:reason => reason,
                                           :subscribable => self.subscribable,
                                           :original_subscription_plan_id => self.original_plan.id,
-                                          :new_subscription_plan_id => self.subscription_plan.id)
+                                          :original_rate => self.rate(:plan => self.original_plan),
+                                          :new_subscription_plan_id => self.subscription_plan.id,
+                                          :new_rate => self.rate)
       end
     end
     
     def audit_destroy
       FreemiumSubscriptionChange.create(:reason => "cancellation", 
                                         :subscribable => self.subscribable,
-                                        :original_subscription_plan_id => self.subscription_plan_id)
+                                        :original_subscription_plan_id => self.subscription_plan_id,
+                                        :original_rate => self.rate,
+                                        :new_rate => Money.empty)
     end
     
     public
@@ -242,7 +248,7 @@ module Freemium
 
     # sets the expiration for the subscription based on today and the configured grace period.
     def expire_after_grace!(transaction = nil)
-      return unless self.expired_on.nil? # You only set this once subsequent failed transactions shouldn't affect expiration
+      return unless self.expire_on.nil? # You only set this once subsequent failed transactions shouldn't affect expiration
       self.expire_on = [Date.today, paid_through].max + Freemium.days_grace
       transaction.message = "now set to expire on #{self.expire_on}" if transaction
       Freemium.mailer.deliver_expiration_warning(self)

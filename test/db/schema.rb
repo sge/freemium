@@ -67,6 +67,8 @@ ActiveRecord::Schema.define(:version => 1) do
     t.column :subscribable_type, :string, :null => false
     t.column :original_subscription_plan_id, :integer, :null => true
     t.column :new_subscription_plan_id, :integer, :null => true
+    t.column :original_rate_cents, :integer, :null => true
+    t.column :new_rate_cents, :integer, :null => true
     t.column :reason, :string, :null => false 
     t.column :created_at, :timestamp, :null => false
   end  

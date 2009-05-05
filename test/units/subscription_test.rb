@@ -288,7 +288,7 @@ class SubscriptionTest < ActiveSupport::TestCase
   def test_deleting_cancels_in_gateway
     Freemium.gateway.expects(:cancel).once.returns(nil)
     freemium_subscriptions(:bobs_subscription).destroy
-    
+
     assert_changed(freemium_subscriptions(:bobs_subscription).subscribable, :cancellation, freemium_subscription_plans(:basic), nil)    
   end
 
@@ -364,6 +364,8 @@ class SubscriptionTest < ActiveSupport::TestCase
     assert_equal reason.to_s, changes.reason
     assert_equal original_plan, changes.original_subscription_plan
     assert_equal new_plan, changes.new_subscription_plan
+    assert_equal (original_plan ? original_plan.rate.cents : 0), changes.original_rate_cents
+    assert_equal (new_plan ? new_plan.rate.cents : 0), changes.new_rate_cents
   end
   
 end
