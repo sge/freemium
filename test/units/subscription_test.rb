@@ -168,6 +168,13 @@ class SubscriptionTest < ActiveSupport::TestCase
     assert_equal 1, ActionMailer::Base.deliveries.size
   end
 
+  def test_receiving_payment_saves_transaction_message
+    subscription = freemium_subscriptions(:bobs_subscription)
+    transaction = create_transaction_for(freemium_subscription_plans(:basic).rate, subscription)
+    subscription.receive_payment!(transaction)
+    assert_match /^now paid through/, transaction.reload.message
+  end
+
   def test_receiving_payment_when_sending_invoice_asplodes
     subscription = freemium_subscriptions(:bobs_subscription)
     paid_through = subscription.paid_through

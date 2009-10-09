@@ -252,6 +252,7 @@ module Freemium
       self.expire_on = [Date.today, paid_through].max + Freemium.days_grace
       transaction.message = "now set to expire on #{self.expire_on}" if transaction
       Freemium.mailer.deliver_expiration_warning(self)
+      transaction.save! if transaction
       save!
     end
 
@@ -276,6 +277,7 @@ module Freemium
     # receives payment and saves the record
     def receive_payment!(transaction)
       receive_payment(transaction)
+      transaction.save!
       self.save!
     end
 
