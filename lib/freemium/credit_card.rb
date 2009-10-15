@@ -8,7 +8,7 @@ module Freemium
       'american_express'   => /^3[47]\d{13}$/,
       'diners_club'        => /^3(0[0-5]|[68]\d)\d{11}$/,
       'jcb'                => /^3528\d{12}$/,
-      'switch'             => /^6759\d{12}(\d{2,3})?$/,  
+      'switch'             => /^6759\d{12}(\d{2,3})?$/,
       'solo'               => /^6767\d{12}(\d{2,3})?$/,
       'dankort'            => /^5019\d{12}$/,
       'maestro'            => /^(5[06-8]|6\d)\d{10,17}$/,
@@ -192,10 +192,6 @@ module Freemium
       @address
     end
     
-    class Address  
-      attr_accessor :email, :street, :city, :state, :zip, :country
-    end    
-    
     ##
     ## Overrides
     ##
@@ -268,7 +264,6 @@ module Freemium
     
     def valid_issue_number?(number)
       number.to_s =~ /^\d{1,2}$/
-    end    
-    
+    end
   end
 end

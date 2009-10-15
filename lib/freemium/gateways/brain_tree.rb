@@ -92,7 +92,8 @@ module Freemium
       def params_for_address(address)
         params = {
           :email => address.email,
-          :address1 => address.street,
+          :address1 => address.address1,
+          :address2 => address.address2,
           :city => address.city,
           :state => address.state, # TODO: two-digit code!
           :zip => address.zip,
