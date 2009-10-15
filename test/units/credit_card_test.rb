@@ -5,11 +5,13 @@ fixtures :users, :freemium_subscriptions, :freemium_subscription_plans, :freemiu
   
   def setup
     @subscription = FreemiumSubscription.new(:subscription_plan => freemium_subscription_plans(:premium), :subscribable => users(:sally))
-    @credit_card = FreemiumCreditCard.new(FreemiumCreditCard.sample_params.merge(:subscription => @subscription))   
+    @credit_card = FreemiumCreditCard.new(FreemiumCreditCard.sample_params.merge(:subscription => @subscription))
         
     Freemium.gateway = Freemium::Gateways::BrainTree.new
     Freemium.gateway.username = 'demo'
     Freemium.gateway.password = 'password'
+
+    Freemium.gateway.stubs(:validate_card).returns(Freemium::Response.new(true))
   end
   
   def test_create
@@ -21,8 +23,18 @@ fixtures :users, :freemium_subscriptions, :freemium_subscription_plans, :freemiu
     assert_not_nil @subscription.credit_card.display_number
     assert_not_nil @subscription.credit_card.card_type
     assert_not_nil @subscription.credit_card.expiration_date
-  end  
-  
+  end
+
+  def test_create_with_billing_validation_failure
+    Freemium.gateway.stubs(:validate_card).returns(Freemium::Response.new(false, 'responsetext' => 'FAILED'))
+
+    @subscription.credit_card = @credit_card
+
+    assert_raises Freemium::CreditCardStorageError do
+      @subscription.save
+    end
+  end
+
   def test_update
     @subscription.credit_card = @credit_card
 

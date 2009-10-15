@@ -28,6 +28,10 @@ module Freemium
 
       # Stores a card in SecureVault.
       def store(credit_card, address = nil)
+        # Don't store unless we can validate the card
+        v = validate_card(credit_card, address)
+        return v unless v.success?
+
         p = Post.new(URL, {
           :username => self.username,
           :password => self.password,
@@ -41,6 +45,10 @@ module Freemium
 
       # Updates a card in SecureVault.
       def update(vault_id, credit_card = nil, address = nil)
+        # Don't store unless we can validate the card
+        v = validate_card(credit_card, address)
+        return v.response unless v.success?
+
         p = Post.new(URL, {
           :username => self.username,
           :password => self.password,
@@ -78,6 +86,20 @@ module Freemium
       end
 
       protected
+      def validate_card(credit_card, address = nil)
+        p = Post.new(URL, {
+          :username => self.username,
+          :password => self.password,
+          :type => 'validate'
+        })
+        p.params.merge! params_for_credit_card(credit_card)
+        if address
+          p.params.merge! params_for_address(address)
+        end
+
+        p.commit
+        return p.response
+      end
 
       def params_for_credit_card(card)
         params = {
@@ -127,7 +149,7 @@ module Freemium
         def parse(data)
           returning({}) do |results|
             data.split('&').each do |pair|
-              key, value = pair.split('=')
+              key, value = pair.split('=', 2).collect { |v| CGI::unescape(v) }
               results[key] = value
             end
           end
