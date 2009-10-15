@@ -39,14 +39,14 @@ module Freemium
         validates_presence_of :subscription_plan
         validates_presence_of :paid_through, :if => :paid? 
         validates_presence_of :started_on
-        validates_presence_of :credit_card, :if => :paid?
-        validates_associated :credit_card#, :if => :paid?
+        validates_presence_of :credit_card, :if => :store_credit_card?
+        validates_associated :credit_card#, :if => :store_credit_card?
       end
       base.extend ClassMethods
     end
     
     def original_plan
-      @original_plan ||= FreemiumSubscriptionPlan.find(self.changes["subscription_plan_id"].first) if subscription_plan_id_changed?
+      @original_plan ||= FreemiumSubscriptionPlan.find_by_id(subscription_plan_id_was) unless subscription_plan_id_was.nil?
     end
     
     ##
@@ -106,7 +106,7 @@ module Freemium
     end
     
     def discard_credit_card_unless_paid
-      unless paid?
+      unless store_credit_card?
         credit_card.destroy if credit_card
         cancel_in_remote_system
       end
@@ -181,7 +181,12 @@ module Freemium
     def paid?
       return false unless rate
       rate.cents > 0
-    end  
+    end
+
+    # Allow for more complex logic to decide if a card should be stored
+    def store_credit_card?
+      paid?
+    end
     
     ##
     ## Coupon Redemption
