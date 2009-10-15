@@ -2,6 +2,10 @@ class User < ActiveRecord::Base
   has_many :subscriptions, :as => :subscribable
 end
 
+class FreemiumCouponRedemption < ActiveRecord::Base
+  include Freemium::CouponRedemption
+end
+
 class FreemiumSubscription < ActiveRecord::Base
   include Freemium::Subscription
 end
@@ -16,10 +20,6 @@ end
 
 class FreemiumCoupon < ActiveRecord::Base
   include Freemium::Coupon
-end
-
-class FreemiumCouponRedemption < ActiveRecord::Base
-  include Freemium::CouponRedemption
 end
 
 class FreemiumTransaction < ActiveRecord::Base
