@@ -11,7 +11,7 @@ fixtures :users, :freemium_subscriptions, :freemium_subscription_plans, :freemiu
     Freemium.gateway.username = 'demo'
     Freemium.gateway.password = 'password'
 
-    Freemium.gateway.stubs(:validate_card).returns(Freemium::Response.new(true))
+    Freemium.gateway.stubs(:validate).returns(Freemium::Response.new(true))
   end
   
   def test_create
@@ -26,13 +26,15 @@ fixtures :users, :freemium_subscriptions, :freemium_subscription_plans, :freemiu
   end
 
   def test_create_with_billing_validation_failure
-    Freemium.gateway.stubs(:validate_card).returns(Freemium::Response.new(false, 'responsetext' => 'FAILED'))
+    response = Freemium::Response.new(false, 'responsetext' => 'FAILED')
+    response.message = 'FAILED'
+
+    Freemium.gateway.stubs(:validate).returns(response)
 
     @subscription.credit_card = @credit_card
 
-    assert_raises Freemium::CreditCardStorageError do
-      @subscription.save
-    end
+    assert !@subscription.save
+    assert_match /FAILED/, @subscription.errors.on_base
   end
 
   def test_update

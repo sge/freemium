@@ -8,7 +8,7 @@ class ManualBillingTest < ActiveSupport::TestCase
   end
 
   def setup
-    Freemium.gateway.stubs(:validate_card).returns(Freemium::Response.new(true))
+    Freemium.gateway.stubs(:validate).returns(Freemium::Response.new(true))
   end
 
   def test_find_billable

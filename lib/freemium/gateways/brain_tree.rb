@@ -29,7 +29,7 @@ module Freemium
       # Stores a card in SecureVault.
       def store(credit_card, address = nil)
         # Don't store unless we can validate the card
-        v = validate_card(credit_card, address)
+        v = validate(credit_card, address)
         return v unless v.success?
 
         p = Post.new(URL, {
@@ -46,7 +46,7 @@ module Freemium
       # Updates a card in SecureVault.
       def update(vault_id, credit_card = nil, address = nil)
         # Don't store unless we can validate the card
-        v = validate_card(credit_card, address)
+        v = validate(credit_card, address)
         return v.response unless v.success?
 
         p = Post.new(URL, {
@@ -85,8 +85,8 @@ module Freemium
         return p.response
       end
 
-      protected
-      def validate_card(credit_card, address = nil)
+      # Validates the card.
+      def validate(credit_card, address = nil)
         p = Post.new(URL, {
           :username => self.username,
           :password => self.password,
@@ -101,6 +101,7 @@ module Freemium
         return p.response
       end
 
+      protected
       def params_for_credit_card(card)
         params = {
           :payment => 'creditcard',

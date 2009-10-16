@@ -24,6 +24,11 @@ module Freemium
       def cancel(*args)
         args
       end
+
+      def validate(*args)
+        response = Freemium::Response.new(true)
+        response
+      end
     end
   end
 end

@@ -22,6 +22,12 @@ module Freemium
         raise MethodNotImplemented
       end
 
+      # validates a credit card with the gateway.
+      # should return a Freemium::Response
+      def validate(credit_card, address = nil)
+        raise MethodNotImplemented
+      end
+
       ##
       ## Only needed to support Freemium.billing_handler = :gateway
       ##

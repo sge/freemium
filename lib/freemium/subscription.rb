@@ -30,17 +30,19 @@ module Freemium
         before_save :discard_credit_card_unless_paid
         before_destroy :cancel_in_remote_system
         
-        after_create :audit_create
-        after_update :audit_update
+        after_create  :audit_create
+        after_update  :audit_update
         after_destroy :audit_destroy
            
         validates_presence_of :subscribable
-        validates_associated :subscribable
+        validates_associated  :subscribable
         validates_presence_of :subscription_plan
         validates_presence_of :paid_through, :if => :paid? 
         validates_presence_of :started_on
         validates_presence_of :credit_card, :if => :store_credit_card?
-        validates_associated :credit_card#, :if => :store_credit_card?
+        validates_associated  :credit_card#, :if => :store_credit_card?
+
+        validate :gateway_validates_credit_card
       end
       base.extend ClassMethods
     end
@@ -48,13 +50,26 @@ module Freemium
     def original_plan
       @original_plan ||= FreemiumSubscriptionPlan.find_by_id(subscription_plan_id_was) unless subscription_plan_id_was.nil?
     end
+
+    protected
+
+    ##
+    ## Validations
+    ##
+
+    def gateway_validates_credit_card
+      if credit_card && credit_card.changed? && credit_card.valid?
+        response = Freemium.gateway.validate(credit_card, credit_card.address)
+        unless response.success?
+          errors.add_to_base("Credit card could not be validated: #{response.message}")
+        end
+      end
+    end
     
     ##
     ## Callbacks
     ##
     
-    protected
-
     def set_paid_through
       if subscription_plan_id_changed? && !paid_through_changed?
         if paid?
