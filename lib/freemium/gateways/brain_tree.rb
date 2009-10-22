@@ -28,10 +28,6 @@ module Freemium
 
       # Stores a card in SecureVault.
       def store(credit_card, address = nil)
-        # Don't store unless we can validate the card
-        v = validate(credit_card, address)
-        return v unless v.success?
-
         p = Post.new(URL, {
           :username => self.username,
           :password => self.password,
@@ -45,10 +41,6 @@ module Freemium
 
       # Updates a card in SecureVault.
       def update(vault_id, credit_card = nil, address = nil)
-        # Don't store unless we can validate the card
-        v = validate(credit_card, address)
-        return v.response unless v.success?
-
         p = Post.new(URL, {
           :username => self.username,
           :password => self.password,
@@ -104,23 +96,26 @@ module Freemium
       protected
       def params_for_credit_card(card)
         params = {
-          :payment => 'creditcard',
+          :payment   => 'creditcard',
           :firstname => card.first_name,
-          :lastname => card.last_name,
-          :ccnumber => card.number,
-          :ccexp => ["%.2i" % card.month, ("%.4i" % card.year)[-2..-1]].join # MMYY
+          :lastname  => card.last_name,
+          :ccnumber  => card.number,
+          :ccv       => card.verification_value,
+          :ccexp     => ["%.2i" % card.month, ("%.4i" % card.year)[-2..-1]].join # MMYY
         }
       end
 
       def params_for_address(address)
         params = {
-          :email => address.email,
-          :address1 => address.address1,
-          :address2 => address.address2,
-          :city => address.city,
-          :state => address.state, # TODO: two-digit code!
-          :zip => address.zip,
-          :country => address.country # TODO: two digit code! (ISO-3166)
+          :email     => address.email,
+          :address1  => address.address1,
+          :address2  => address.address2,
+          :city      => address.city,
+          :state     => address.state, # TODO: two-digit code!
+          :zip       => address.zip,
+          :country   => address.country, # TODO: two digit code! (ISO-3166)
+          :phone     => address.phone_number,
+          :ipaddress => address.ip_address
         }
       end
 
