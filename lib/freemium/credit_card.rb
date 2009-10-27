@@ -198,7 +198,7 @@ module Freemium
     
     # We're overriding AR#changed? to include instance vars that aren't persisted to see if a new card is being set
     def changed?
-      card_type_changed? || ![:number, :month, :year, :first_name, :last_name, :start_month, :start_year, :issue_number, :verification_value].select{|attr| !self.send(attr).nil?}.empty?
+      card_type_changed? || [:number, :month, :year, :first_name, :last_name, :start_month, :start_year, :issue_number, :verification_value].any? {|attr| !self.send(attr).nil?}
     end
 
     ##
@@ -206,7 +206,9 @@ module Freemium
     ##
     
     def validate
-      return if !changed?
+      # We don't need to run validations unless it's a new record or the
+      # record has changed
+      return unless new_record? || changed?
       
       validate_essential_attributes
 
