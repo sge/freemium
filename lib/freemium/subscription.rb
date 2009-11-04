@@ -8,7 +8,7 @@
 module Freemium
   module Subscription
     include Rates
-        
+
     def self.included(base)
       base.class_eval do
         belongs_to :subscription_plan, :class_name => "FreemiumSubscriptionPlan"
@@ -16,10 +16,10 @@ module Freemium
         belongs_to :credit_card, :dependent => :destroy, :class_name => "FreemiumCreditCard"
         has_many :coupon_redemptions, :conditions => "freemium_coupon_redemptions.expired_on IS NULL", :class_name => "FreemiumCouponRedemption", :foreign_key => :subscription_id, :dependent => :destroy
         has_many :coupons, :through => :coupon_redemptions, :conditions => "freemium_coupon_redemptions.expired_on IS NULL"
-  
+
         # Auditing
         has_many :transactions, :class_name => "FreemiumTransaction", :foreign_key => :subscription_id
-              
+
         named_scope :paid, :include => [:subscription_plan], :conditions => "freemium_subscription_plans.rate_cents > 0"
         named_scope :due, lambda {
           {
@@ -37,15 +37,15 @@ module Freemium
         before_save :store_credit_card_offsite
         before_save :discard_credit_card_unless_paid
         before_destroy :cancel_in_remote_system
-        
+
         after_create  :audit_create
         after_update  :audit_update
         after_destroy :audit_destroy
-           
+
         validates_presence_of :subscribable
         validates_associated  :subscribable
         validates_presence_of :subscription_plan
-        validates_presence_of :paid_through, :if => :paid? 
+        validates_presence_of :paid_through, :if => :paid?
         validates_presence_of :started_on
         validates_presence_of :credit_card, :if => :store_credit_card?
         validates_associated  :credit_card#, :if => :store_credit_card?
@@ -54,7 +54,7 @@ module Freemium
       end
       base.extend ClassMethods
     end
-    
+
     def original_plan
       @original_plan ||= FreemiumSubscriptionPlan.find_by_id(subscription_plan_id_was) unless subscription_plan_id_was.nil?
     end
@@ -73,11 +73,11 @@ module Freemium
         end
       end
     end
-    
+
     ##
     ## Callbacks
     ##
-    
+
     def set_paid_through
       if subscription_plan_id_changed? && !paid_through_changed?
         if paid?
@@ -101,7 +101,7 @@ module Freemium
         end
       end
       true
-    end    
+    end
 
     def set_started_on
       self.started_on = Date.today if subscription_plan_id_changed?
@@ -119,7 +119,7 @@ module Freemium
     # NOTE: Support for updating an address could easily be added
     # with an "address" property on the credit card.
     def store_credit_card_offsite
-      if credit_card && credit_card.changed? && credit_card.valid? 
+      if credit_card && credit_card.changed? && credit_card.valid?
         response = billing_key ? Freemium.gateway.update(billing_key, credit_card, credit_card.address) : Freemium.gateway.store(credit_card, credit_card.address)
         raise Freemium::CreditCardStorageError.new(response.message) unless response.success?
         self.billing_key = response.billing_key
@@ -127,33 +127,33 @@ module Freemium
         self.credit_card.reload # to prevent needless subsequent store() calls
       end
     end
-    
+
     def discard_credit_card_unless_paid
       unless store_credit_card?
         credit_card.destroy if credit_card
         cancel_in_remote_system
       end
     end
-    
+
     def cancel_in_remote_system
       if billing_key
         Freemium.gateway.cancel(self.billing_key)
         self.billing_key = nil
       end
     end
-    
+
     ##
     ## Callbacks :: Auditing
-    ##    
-    
+    ##
+
     def audit_create
-      FreemiumSubscriptionChange.create(:reason => "new", 
+      FreemiumSubscriptionChange.create(:reason => "new",
                                         :subscribable => self.subscribable,
                                         :new_subscription_plan_id => self.subscription_plan_id,
                                         :new_rate => self.rate,
                                         :original_rate => Money.empty)
     end
-    
+
     def audit_update
       if self.subscription_plan_id_changed?
         return if self.original_plan.nil?
@@ -166,41 +166,41 @@ module Freemium
                                           :new_rate => self.rate)
       end
     end
-    
+
     def audit_destroy
-      FreemiumSubscriptionChange.create(:reason => "cancellation", 
+      FreemiumSubscriptionChange.create(:reason => "cancellation",
                                         :subscribable => self.subscribable,
                                         :original_subscription_plan_id => self.subscription_plan_id,
                                         :original_rate => self.rate,
                                         :new_rate => Money.empty)
     end
-    
+
     public
-    
+
     ##
     ## Class Methods
     ##
-    
+
     module ClassMethods
       # expires all subscriptions that have been pastdue for too long (accounting for grace)
       def expire
         self.expired.select{|s| s.paid?}.each(&:expire!)
-      end      
+      end
     end
-    
+
     ##
     ## Rate
     ##
-    
+
     def rate(options = {})
       options = {:date => Date.today, :plan => self.subscription_plan}.merge(options)
-      
+
       return nil unless options[:plan]
       value = options[:plan].rate
       value = self.coupon(options[:date]).discount(value) if self.coupon(options[:date])
       value
     end
-    
+
     def paid?
       return false unless rate
       rate.cents > 0
@@ -210,27 +210,27 @@ module Freemium
     def store_credit_card?
       paid?
     end
-    
+
     ##
     ## Coupon Redemption
     ##
-    
+
     def coupon_key=(coupon_key)
       @coupon_key = coupon_key ? coupon_key.downcase : nil
       self.coupon = FreemiumCoupon.find_by_redemption_key(@coupon_key) unless @coupon_key.blank?
     end
-    
+
     def validate
       self.errors.add :coupon, "could not be found for '#{@coupon_key}'" if !@coupon_key.blank? && FreemiumCoupon.find_by_redemption_key(@coupon_key).nil?
     end
-      
+
     def coupon=(coupon)
       if coupon
         s = FreemiumCouponRedemption.new(:subscription => self, :coupon => coupon)
         coupon_redemptions << s
       end
     end
-    
+
     def coupon(date = Date.today)
       coupon_redemption(date).coupon rescue nil
     end
@@ -297,7 +297,7 @@ module Freemium
     def expired?
       expire_on and expire_on <= Date.today
     end
-    
+
     ##
     ## Receiving More Money
     ##
@@ -320,24 +320,24 @@ module Freemium
       self.save!
       transaction.subscription.reload  # reloaded to that the paid_through date is correct
       transaction.message = "now paid through #{self.paid_through}"
-      
+
       begin
         Freemium.mailer.deliver_invoice(transaction)
       rescue => e
         transaction.message = "error sending invoice"
       end
     end
-    
+
     def credit(amount)
       self.paid_through = if amount.cents % rate.cents == 0
         self.paid_through + (amount.cents / rate.cents).months
       else
         self.paid_through + (amount.cents / daily_rate.cents).days
-      end 
-      
+      end
+
       # if they've paid again, then reset expiration
       self.expire_on = nil
-      self.in_trial = false      
+      self.in_trial = false
     end
 
   end
