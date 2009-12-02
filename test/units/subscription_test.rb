@@ -222,6 +222,18 @@ class SubscriptionTest < ActiveSupport::TestCase
     assert_changed(freemium_subscriptions(:bobs_subscription).subscribable, :expiration, freemium_subscription_plans(:basic), freemium_subscription_plans(:free))    
   end
 
+  def test_instance_expire_with_no_expired_plan
+    Freemium.expired_plan = nil
+    Freemium.gateway.expects(:cancel).once.returns(nil)
+    ActionMailer::Base.deliveries = []
+    freemium_subscriptions(:bobs_subscription).expire!
+
+    assert_equal 1, ActionMailer::Base.deliveries.size, "notice is sent to user"
+    assert_equal freemium_subscription_plans(:basic), freemium_subscriptions(:bobs_subscription).subscription_plan, "subscription was not changed"
+    assert_nil freemium_subscriptions(:bobs_subscription).billing_key, "billing key is thrown away"
+    assert_nil freemium_subscriptions(:bobs_subscription).reload.billing_key, "billing key is thrown away"
+  end
+
   def test_class_expire
     Freemium.expired_plan_key = :free
     freemium_subscriptions(:bobs_subscription).update_attributes(:paid_through => Date.today - 4, :expire_on => Date.today)

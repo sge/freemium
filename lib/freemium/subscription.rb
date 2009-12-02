@@ -130,9 +130,13 @@ module Freemium
 
     def discard_credit_card_unless_paid
       unless store_credit_card?
-        credit_card.destroy if credit_card
-        cancel_in_remote_system
+        destroy_credit_card
       end
+    end
+
+    def destroy_credit_card
+      credit_card.destroy if credit_card
+      cancel_in_remote_system
     end
 
     def cancel_in_remote_system
@@ -289,8 +293,8 @@ module Freemium
       Freemium.mailer.deliver_expiration_notice(self)
       # downgrade to a free plan
       self.expire_on = Date.today
-      self.subscription_plan = Freemium.expired_plan
-      # throw away this credit card (they'll have to start all over again)
+      self.subscription_plan = Freemium.expired_plan if Freemium.expired_plan
+      self.destroy_credit_card
       self.save!
     end
 
