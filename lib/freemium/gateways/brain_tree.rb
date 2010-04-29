@@ -19,7 +19,7 @@ module Freemium
     # = For Testing
     # The URL does not change. If your account is in test mode, no charges will be processed. Otherwise,
     # configure the username and password to be "demo" and "password", respectively.
-    class BrainTree
+    class BrainTree < Base
       URL = 'https://secure.braintreepaymentgateway.com/api/transact.php'
       attr_accessor :username, :password
 
@@ -35,7 +35,7 @@ module Freemium
         })
         p.params.merge! params_for_credit_card(credit_card)
         p.params.merge! params_for_address(address)         if address
-        p.commit
+        p.commit(open_timeout, read_timeout)
         return p.response
       end
 
@@ -49,7 +49,7 @@ module Freemium
         })
         p.params.merge! params_for_credit_card(credit_card) if credit_card
         p.params.merge! params_for_address(address)         if address
-        p.commit
+        p.commit(open_timeout, read_timeout)
         return p.response
       end
 
@@ -61,7 +61,7 @@ module Freemium
           :customer_vault_id => vault_id,
           :amount => sprintf("%.2f", amount.cents.to_f / 100)
         })
-        p.commit
+        p.commit(open_timeout, read_timeout)
         return FreemiumTransaction.new(:billing_key => vault_id, :amount => amount, :success => p.response.success?)
       end
 
@@ -73,7 +73,7 @@ module Freemium
           :customer_vault => 'delete_customer',
           :customer_vault_id => vault_id
         })
-        p.commit
+        p.commit(open_timeout, read_timeout)
         return p.response
       end
 
@@ -89,7 +89,7 @@ module Freemium
           p.params.merge! params_for_address(address)
         end
 
-        p.commit
+        p.commit(open_timeout, read_timeout)
         return p.response
       end
 
@@ -129,8 +129,8 @@ module Freemium
           self.params = params
         end
 
-        def commit
-          data = parse(post)
+        def commit(open_timeout, read_timeout)
+          data = parse(post(open_timeout, read_timeout))
           # from BT API: 1 means approved, 2 means declined, 3 means error
           success = data['response'].to_i == 1
           @response = Freemium::Response.new(success, data)
@@ -152,12 +152,12 @@ module Freemium
         end
 
         # cf. ActiveMerchant's PostsData module.
-        def post
-          uri   = URI.parse(self.url)
+        def post(open_timeout, read_timeout)
+          uri = URI.parse(self.url)
 
           http = Net::HTTP.new(uri.host, uri.port)
-          http.open_timeout = 10
-          http.read_timeout = 10
+          http.open_timeout = open_timeout
+          http.read_timeout = read_timeout
           http.use_ssl      = true
           http.verify_mode  = OpenSSL::SSL::VERIFY_NONE
 

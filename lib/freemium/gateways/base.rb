@@ -1,6 +1,12 @@
 module Freemium
   module Gateways
     class Base #:nodoc:
+      superclass_delegating_accessor :open_timeout
+      self.open_timeout = 60
+
+      superclass_delegating_accessor :read_timeout
+      self.read_timeout = 60
+
       # cancels the subscription identified by the given billing key.
       # this might mean removing it from the remote system, or halting the remote
       # recurring billing.
