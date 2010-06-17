@@ -79,6 +79,9 @@ module Freemium
 
       # Validates the card.
       def validate(credit_card, address = nil)
+        # Assume we validated if we're using a demo account
+        return Freemium::Response.new(true) if self.username == 'demo'
+
         p = Post.new(URL, {
           :username => self.username,
           :password => self.password,
