@@ -59,6 +59,10 @@ module Freemium
       @original_plan ||= FreemiumSubscriptionPlan.find_by_id(subscription_plan_id_was) unless subscription_plan_id_was.nil?
     end
 
+    def gateway
+      Freemium.gateway
+    end
+
     protected
 
     ##
@@ -67,7 +71,7 @@ module Freemium
 
     def gateway_validates_credit_card
       if credit_card && credit_card.changed? && credit_card.valid?
-        response = Freemium.gateway.validate(credit_card, credit_card.address)
+        response = gateway.validate(credit_card, credit_card.address)
         unless response.success?
           errors.add_to_base("Credit card could not be validated: #{response.message}")
         end
@@ -120,7 +124,7 @@ module Freemium
     # with an "address" property on the credit card.
     def store_credit_card_offsite
       if credit_card && credit_card.changed? && credit_card.valid?
-        response = billing_key ? Freemium.gateway.update(billing_key, credit_card, credit_card.address) : Freemium.gateway.store(credit_card, credit_card.address)
+        response = billing_key ? gateway.update(billing_key, credit_card, credit_card.address) : gateway.store(credit_card, credit_card.address)
         raise Freemium::CreditCardStorageError.new(response.message) unless response.success?
         self.billing_key = response.billing_key
         self.expire_on = nil

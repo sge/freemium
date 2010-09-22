@@ -14,7 +14,7 @@ module Freemium
     # assumes, of course, that this module is mixed in to the Subscription model
     def charge!
       # Save the transaction immediately
-      @transaction = Freemium.gateway.charge(billing_key, self.installment_amount)
+      @transaction = gateway.charge(billing_key, self.installment_amount)
       self.transactions << @transaction
       self.last_transaction_at = Time.now # TODO this could probably now be inferred from the list of transactions
       self.save(false)
