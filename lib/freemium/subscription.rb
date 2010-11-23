@@ -145,7 +145,7 @@ module Freemium
 
     def cancel_in_remote_system
       if billing_key
-        Freemium.gateway.cancel(self.billing_key)
+        gateway.cancel(self.billing_key)
         self.billing_key = nil
       end
     end
