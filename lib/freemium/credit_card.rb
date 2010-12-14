@@ -33,6 +33,8 @@ module Freemium
         has_one :subscription, :class_name => "FreemiumSubscription"
         
         before_validation :sanitize_data, :if => :changed?
+
+        validate :validate_card
       end
       
       base.extend(ClassMethods)
@@ -146,8 +148,8 @@ module Freemium
         month_days = [nil,31,28,31,30,31,30,31,31,30,31,30,31]
         begin 
           month_days[2] = 29 if Date.leap?(@year)
-          self['expiration_date'] = Time.parse("#{@month}/#{month_days[@month]}/#{@year} 23:59:59")
-        rescue
+          str = "#{month_days[@month]}/#{@month}/#{@year} 23:59:59" 
+          self['expiration_date'] = Time.parse(str)
         end
       end  
       self['expiration_date']
@@ -205,7 +207,7 @@ module Freemium
     ## Validation
     ##
     
-    def validate
+    def validate_card
       # We don't need to run validations unless it's a new record or the
       # record has changed
       return unless new_record? || changed?
@@ -224,7 +226,7 @@ module Freemium
     
     def validate_card_number #:nodoc:
       errors.add :number, "is not a valid credit card number" unless self.class.valid_number?(number)
-      unless errors.on(:number) || errors.on(:type)
+      unless errors[:number] || errors[:type]
         errors.add :card_type, "is not the correct card type" unless self.class.matching_card_type?(number, card_type)
       end
     end

@@ -8,7 +8,7 @@ module Freemium
       def charge(*args)
         args
       end
-      
+
       def store(*args)
         response = Freemium::Response.new(true)
         response.billing_key = Time.now.to_i.to_s

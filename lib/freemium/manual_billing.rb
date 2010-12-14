@@ -17,17 +17,17 @@ module Freemium
       @transaction = gateway.charge(billing_key, self.installment_amount)
       self.transactions << @transaction
       self.last_transaction_at = Time.now # TODO this could probably now be inferred from the list of transactions
-      self.save(false)
-    
+      self.save(:validate => false)
+
       begin
-        if @transaction.success? 
+        if @transaction.success?
           receive_payment!(@transaction)
         elsif !@transaction.subscription.in_grace?
           expire_after_grace!(@transaction)
         end
       rescue
       end
-      
+
       @transaction
     end
 
@@ -43,14 +43,14 @@ module Freemium
         Freemium.mailer.deliver_admin_report(
           @transactions # Add in transactions
         ) if Freemium.admin_report_recipients && !@transactions.empty?
-        
+
         @transactions
       end
 
       protected
-      
+
       # a subscription is due on the last day it's paid through. so this finds all
-      # subscriptions that expire the day *after* the given date. 
+      # subscriptions that expire the day *after* the given date.
       # because of coupons we can't trust rate_cents alone and need to verify that the account is indeed paid?
       def find_billable
         self.paid.due.select{|s| s.paid?}

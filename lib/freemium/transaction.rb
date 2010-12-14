@@ -3,7 +3,7 @@ module Freemium
 
     def self.included(base)
       base.class_eval do
-        named_scope :since, lambda { |time| {:conditions => ["created_at >= ?", time]} }
+        scope :since, lambda { |time| where(["created_at >= ?", time]) }
         
         belongs_to :subscription, :class_name => "FreemiumSubscription"
         

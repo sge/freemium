@@ -20,17 +20,13 @@ module Freemium
         # Auditing
         has_many :transactions, :class_name => "FreemiumTransaction", :foreign_key => :subscription_id
 
-        named_scope :paid, :include => [:subscription_plan], :conditions => "freemium_subscription_plans.rate_cents > 0"
-        named_scope :due, lambda {
-          {
-            :conditions =>  ['paid_through <= ?', Date.today] # could use the concept of a next retry date
-          }
+        scope :paid, includes(:subscription_plan).where("freemium_subscription_plans.rate_cents > 0")
+        scope :due, lambda {
+          where(['paid_through <= ?', Date.today]) # could use the concept of a next retry date
         }
-        named_scope :expired, lambda {
-          {
-            :conditions => ['expire_on >= paid_through AND expire_on <= ?', Date.today]
-          }
-       }
+        scope :expired, lambda {
+          where(['expire_on >= paid_through AND expire_on <= ?', Date.today])
+        }
 
         before_validation :set_paid_through
         before_validation :set_started_on
@@ -51,6 +47,7 @@ module Freemium
         validates_associated  :credit_card#, :if => :store_credit_card?
 
         validate :gateway_validates_credit_card
+        validate :coupon_exist
       end
       base.extend ClassMethods
     end
@@ -73,7 +70,7 @@ module Freemium
       if credit_card && credit_card.changed? && credit_card.valid?
         response = gateway.validate(credit_card, credit_card.address)
         unless response.success?
-          errors.add_to_base("Credit card could not be validated: #{response.message}")
+          errors.add(:base, "Credit card could not be validated: #{response.message}")
         end
       end
     end
@@ -228,7 +225,7 @@ module Freemium
       self.coupon = FreemiumCoupon.find_by_redemption_key(@coupon_key) unless @coupon_key.blank?
     end
 
-    def validate
+    def coupon_exist
       self.errors.add :coupon, "could not be found for '#{@coupon_key}'" if !@coupon_key.blank? && FreemiumCoupon.find_by_redemption_key(@coupon_key).nil?
     end
 
@@ -262,7 +259,7 @@ module Freemium
 
     # if paid through today, returns zero
     def remaining_days
-      self.paid_through - Date.today
+      (self.paid_through - Date.today)
     end
 
     ##
@@ -271,7 +268,7 @@ module Freemium
 
     # if under grace through today, returns zero
     def remaining_days_of_grace
-      self.expire_on - Date.today - 1
+      (self.expire_on - Date.today - 1).to_i
     end
 
     def in_grace?
@@ -287,14 +284,14 @@ module Freemium
       return unless self.expire_on.nil? # You only set this once subsequent failed transactions shouldn't affect expiration
       self.expire_on = [Date.today, paid_through].max + Freemium.days_grace
       transaction.message = "now set to expire on #{self.expire_on}" if transaction
-      Freemium.mailer.deliver_expiration_warning(self)
+      Freemium.mailer.expiration_warning(self).deliver
       transaction.save! if transaction
       save!
     end
 
     # sends an expiration email, then downgrades to a free plan
     def expire!
-      Freemium.mailer.deliver_expiration_notice(self)
+      Freemium.mailer.expiration_notice(self).deliver
       # downgrade to a free plan
       self.expire_on = Date.today
       self.subscription_plan = Freemium.expired_plan if Freemium.expired_plan
@@ -330,9 +327,9 @@ module Freemium
       transaction.message = "now paid through #{self.paid_through}"
 
       begin
-        Freemium.mailer.deliver_invoice(transaction)
+        Freemium.mailer.invoice(transaction).deliver
       rescue => e
-        transaction.message = "error sending invoice"
+        transaction.message = "error sending invoice: #{e}"
       end
     end
 

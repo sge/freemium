@@ -148,7 +148,7 @@ module Freemium
 
         # BrainTree returns a body of parameters in GET query format, so convert that into a simple hash.
         def parse(data)
-          returning({}) do |results|
+          {}.tap do |results|
             data.split('&').each do |pair|
               key, value = pair.split('=', 2).collect { |v| CGI::unescape(v) }
               results[key] = value

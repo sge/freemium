@@ -10,7 +10,7 @@ module Freemium
       def run_billing
         # first, synchronize transactions
         transactions = process_transactions
-        
+
         # then, set expiration for any subscriptions that didn't process
         find_expirable.each(&:expire_after_grace!)
         # then, actually expire any subscriptions whose time has come
@@ -37,10 +37,10 @@ module Freemium
       # updates all subscriptions with any new transactions
       def process_transactions(transactions = new_transactions)
         transaction do
-          transactions.each do |transaction|
-            subscription = FreemiumSubscription.find_by_billing_key(transaction.billing_key)
-            subscription.transactions << transaction
-            transaction.success? ? subscription.receive_payment!(transaction) : subscription.expire_after_grace!(transaction)
+          transactions.each do |t|
+            subscription = FreemiumSubscription.find_by_billing_key(t.billing_key)
+            subscription.transactions << t
+            t.success? ? subscription.receive_payment!(t) : subscription.expire_after_grace!(t)
           end
         end
         transactions
@@ -49,11 +49,10 @@ module Freemium
       # finds all subscriptions that should have paid but didn't and need to be expired
       # because of coupons we can't trust rate_cents alone and need to verify that the account is indeed paid?
       def find_expirable
-        find(
-          :all,
-          :include => [:subscription_plan],
-          :conditions => ['freemium_subscription_plans.rate_cents > 0 AND paid_through < ? AND (expire_on IS NULL OR expire_on < paid_through)', Date.today]
-        ).select{|s| s.paid?}
+        paid.
+          where(['paid_through < ?', Date.today]).
+          where('(expire_on IS NULL OR expire_on < paid_through)').
+          select { |s| s.paid? }
       end
     end
   end

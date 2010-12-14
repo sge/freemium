@@ -1,0 +1,7 @@
+require 'freemium'
+require 'rails'
+
+module Freemium
+  class Railtie < Rails::Railtie
+  end
+end

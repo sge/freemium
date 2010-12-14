@@ -1,3 +1,0 @@
-active_record_merge_test:
-  adapter: sqlite3
-  database: 'test/db/test.sqlite3'
