@@ -1,6 +1,7 @@
 require 'rails'
 
 require 'money'
+require "freemium/version"
 require 'freemium/address'
 require 'freemium/coupon'
 require 'freemium/coupon_redemption'

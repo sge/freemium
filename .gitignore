@@ -1,24 +1,31 @@
-# rcov generated
-coverage
-
-# rdoc generated
-rdoc
-
 # yard generated
 doc
 .yardoc
 
-# bundler
-.bundle
 
-# jeweler generated
+*.gem
+*.rbc
+.bundle
+.config
+.yardoc
+Gemfile.lock
+InstalledFiles
+_yardoc
+coverage
+doc/
+lib/bundler/man
 pkg
+rdoc
+spec/reports
+test/tmp
+test/version_tmp
+tmp
 
 spec/dummy/db/*.sqlite3
 spec/dummy/log/*.log
 spec/dummy/tmp/
 spec/dummy/public/
-# Have editor/IDE/OS specific files you need to ignore? Consider using a global gitignore: 
+# Have editor/IDE/OS specific files you need to ignore? Consider using a global gitignore:
 #
 # * Create a file at ~/.gitignore
 # * Include files you want ignored
