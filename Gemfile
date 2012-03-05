@@ -1,6 +1,6 @@
 source "http://rubygems.org"
 
-gem "rails", "3.0.3"
+gem "rails", "~> 3.1.3"
 gem "sqlite3-ruby", :require => "sqlite3"
 gem "money"
 
@@ -12,13 +12,17 @@ gem "money"
 # Include everything needed to run rake, tests, features, etc.
 
 group :test do
-  gem "rspec-rails"
   gem "autotest"
 end
 
 group :development do
-  gem "rspec-rails"
   gem "autotest"
-  gem "bundler", "~> 1.0.0"
-  gem "jeweler", "~> 1.5.0"
+  gem "bundler", "~> 1.1.rc.8"
+  gem "jeweler"
+end
+
+group :test, :development do
+  gem 'ruby-debug-base19', "~>0.11.26"
+  gem 'ruby-debug19',"~>0.11.6", :require => 'ruby-debug'
+  gem 'rspec-rails'
 end

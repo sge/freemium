@@ -6,7 +6,6 @@ describe FreemiumCreditCard do
   before(:each) do
     @subscription = FreemiumSubscription.new(:subscription_plan => freemium_subscription_plans(:premium), :subscribable => users(:sally))
     @credit_card = FreemiumCreditCard.new(FreemiumCreditCard.sample_params.merge(:subscription => @subscription))
-
     Freemium.gateway = Freemium::Gateways::BrainTree.new
     Freemium.gateway.username = 'demo'
     Freemium.gateway.password = 'password'

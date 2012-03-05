@@ -22,6 +22,22 @@ ActiveRecord::Schema.define(:version => 1) do
     t.column :billing_key, :string, :null => true
     t.column :started_on, :date, :null => true
     t.column :last_transaction_at, :datetime, :null => true
+    t.column :last_transaction_success, :boolean, :null => true
+    t.column :in_trial, :boolean, :null => false, :default => false
+  end
+
+  create_table :freemium_manual_subscriptions, :force => true do |t|
+    t.column :subscribable_id, :integer, :null => false
+    t.column :subscribable_type, :string, :null => false
+    t.column :billing_key, :string, :null => true
+    t.column :credit_card_id, :integer, :null => true
+    t.column :subscription_plan_id, :integer, :null => false
+    t.column :paid_through, :date, :null => true
+    t.column :expire_on, :date, :null => true
+    t.column :billing_key, :string, :null => true
+    t.column :started_on, :date, :null => true
+    t.column :last_transaction_at, :datetime, :null => true
+    t.column :last_transaction_success, :boolean, :null => true
     t.column :in_trial, :boolean, :null => false, :default => false
   end
 

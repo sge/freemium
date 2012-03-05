@@ -1,14 +1,10 @@
 require 'spec_helper'
 
-
 describe FreemiumSubscription do
   fixtures :users, :freemium_subscriptions, :freemium_subscription_plans, :freemium_credit_cards
 
 
   before(:each) do
-    class FreemiumSubscription
-      include Freemium::ManualBilling
-    end
     Freemium.gateway = Freemium::Gateways::Test.new
   end
 
@@ -44,7 +40,8 @@ describe FreemiumSubscription do
     expire_on = Date.today + 2
     paid_through = subscription.paid_through
     subscription.update_attribute :expire_on, expire_on
-
+    subscription.reload
+    subscription.expire_on.should eql(expire_on)
     expirable = FreemiumSubscription.send(:find_billable)
     expirable.size.should eql(1), "Subscriptions in their grace period should be retried"
 

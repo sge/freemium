@@ -1,5 +1,6 @@
 # some test credit_card params
 class FreemiumCreditCard
+
   def self.sample_params
     {
       :first_name => "Santa",
@@ -7,7 +8,7 @@ class FreemiumCreditCard
       :card_type => "visa",
       :number => "4111111111111111",
       :month => 10,
-      :year => 2011,
+      :year => (Time.now + 3.years).year,
       :verification_value => 999
     }
   end

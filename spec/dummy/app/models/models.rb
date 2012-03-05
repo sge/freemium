@@ -8,6 +8,7 @@ end
 
 class FreemiumSubscription < ActiveRecord::Base
   include Freemium::Subscription
+  include Freemium::ManualBilling
 end
 
 class FreemiumSubscriptionPlan < ActiveRecord::Base

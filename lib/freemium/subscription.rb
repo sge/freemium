@@ -60,6 +60,7 @@ module Freemium
       Freemium.gateway
     end
 
+
     protected
 
     ##
