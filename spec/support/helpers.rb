@@ -1,5 +1,5 @@
 # some test credit_card params
-class FreemiumCreditCard
+class CreditCard
 
   def self.sample_params
     {
@@ -14,7 +14,7 @@ class FreemiumCreditCard
   end
 
   def self.sample
-    FreemiumCreditCard.new(FreemiumCreditCard.sample_params)
+    CreditCard.new(CreditCard.sample_params)
   end
 end
 

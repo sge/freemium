@@ -38,8 +38,8 @@ module Freemium
   # Freemium will simply try and keep up-to-date on transactions.
   def self.billing_handler=(val)
     case val
-    when :manual  then FreemiumSubscription.send(:include, Freemium::ManualBilling)
-    when :gateway then FreemiumSubscription.send(:include, Freemium::RecurringBilling)
+    when :manual  then ::Subscription.send(:include, Freemium::ManualBilling)
+    when :gateway then ::Subscription.send(:include, Freemium::RecurringBilling)
     else
       raise "unknown billing_handler: #{val}"
     end
@@ -56,7 +56,7 @@ module Freemium
   # What plan to assign to subscriptions that have expired. May be nil.
   mattr_writer :expired_plan
   def self.expired_plan
-    @@expired_plan ||= (FreemiumSubscriptionPlan.find_by_redemption_key(expired_plan_key.to_s) if expired_plan_key)
+    @@expired_plan ||= (::SubscriptionPlan.find_by_redemption_key(expired_plan_key.to_s) if expired_plan_key)
   end
 
   # It's easier to assign a plan by it's key (so you don't get errors before you run migrations)
@@ -71,4 +71,5 @@ module Freemium
   # These will be bcc'd on all SubscriptionMailer emails, and will also receive the
   # admin activity report.
   mattr_accessor :admin_report_recipients
+
 end

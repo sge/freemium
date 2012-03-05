@@ -1,42 +1,42 @@
 require 'spec_helper'
 
 
-describe FreemiumSubscription do
-  fixtures :users, :freemium_subscriptions, :freemium_subscription_plans, :freemium_credit_cards
+describe Subscription do
+  fixtures :users, :subscriptions, :subscription_plans, :credit_cards
 
 
   before(:each) do
-    class FreemiumSubscription
+    class Subscription
       include Freemium::RecurringBilling
     end
     Freemium.gateway = Freemium::Gateways::Test.new
   end
 
   it "should run billing" do
-    FreemiumSubscription.should_receive(:process_transactions).once
-    FreemiumSubscription.should_receive(:find_expirable).once.and_return([])
-    FreemiumSubscription.should_receive(:expire).once
-    FreemiumSubscription.run_billing
+    Subscription.should_receive(:process_transactions).once
+    Subscription.should_receive(:find_expirable).once.and_return([])
+    Subscription.should_receive(:expire).once
+    Subscription.run_billing
   end
 
   it "should send reports" do
-    FreemiumSubscription.stub!(:process_transactions)
+    Subscription.stub!(:process_transactions)
     Freemium.stub!(:admin_report_recipients).and_return("test@example.com")
 
     Freemium.mailer.should_receive(:deliver_admin_report)
-    FreemiumSubscription.run_billing
+    Subscription.run_billing
   end
 
   it "should find expireable subscriptions" do
     # making a one-off fixture set, basically
     create_billable_subscription # this subscription qualifies
-    create_billable_subscription(:subscription_plan => freemium_subscription_plans(:free)) # this subscription would qualify, except it's for the free plan
+    create_billable_subscription(:subscription_plan => subscription_plans(:free)) # this subscription would qualify, except it's for the free plan
     create_billable_subscription(:paid_through => Date.today) # this subscription would qualify, except it's already paid
-    create_billable_subscription(:coupon => FreemiumCoupon.create!(:description => "Complimentary", :discount_percentage => 100)) # should NOT be billable because it's free
+    create_billable_subscription(:coupon => Coupon.create!(:description => "Complimentary", :discount_percentage => 100)) # should NOT be billable because it's free
     s = create_billable_subscription # this subscription would qualify, except it's already been set to expire
     s.update_attribute :expire_on, Date.today + 1
 
-    expirable = FreemiumSubscription.send(:find_expirable)
+    expirable = Subscription.send(:find_expirable)
     expirable.all? { |subscription| subscription.paid?                              }.should be_true, "free subscriptions don't expire"
     expirable.all? { |subscription| !subscription.in_trial?                         }.should be_true, "subscriptions that have been paid are no longer in the trial period"
     expirable.all? { |subscription| subscription.paid_through < Date.today          }.should be_true, "paid subscriptions don't expire"
@@ -47,46 +47,46 @@ describe FreemiumSubscription do
   end
 
   it "should process new transactions" do
-    subscription = freemium_subscriptions(:bobs_subscription)
-    subscription.coupon = FreemiumCoupon.create!(:description => "Complimentary", :discount_percentage => 30)
+    subscription = subscriptions(:bobs_subscription)
+    subscription.coupon = Coupon.create!(:description => "Complimentary", :discount_percentage => 30)
     subscription.save!
 
     paid_through = subscription.paid_through
-    t = FreemiumTransaction.new(:billing_key => subscription.billing_key, :amount => subscription.rate, :success => true)
-    FreemiumSubscription.stub!(:new_transactions => [t])
+    t = AccountTransaction.new(:billing_key => subscription.billing_key, :amount => subscription.rate, :success => true)
+    Subscription.stub!(:new_transactions => [t])
 
     # the actual test
-    FreemiumSubscription.send :process_transactions
+    Subscription.send :process_transactions
     subscription.reload.paid_through.to_s.should eql((paid_through + 1.month).to_s), "extended by two months"
   end
 
   it "should process a failed transaction" do
-    subscription = freemium_subscriptions(:bobs_subscription)
+    subscription = subscriptions(:bobs_subscription)
     paid_through = subscription.paid_through
-    t = FreemiumTransaction.new(:billing_key => subscription.billing_key, :amount => subscription.rate, :success => false)
-    FreemiumSubscription.stub!(:new_transactions => [t])
+    t = AccountTransaction.new(:billing_key => subscription.billing_key, :amount => subscription.rate, :success => false)
+    Subscription.stub!(:new_transactions => [t])
 
     # the actual test
     subscription.expire_on.should be_nil
-    FreemiumSubscription.send :process_transactions
+    Subscription.send :process_transactions
     subscription.reload.paid_through.should eql(paid_through), "not extended"
     subscription.expire_on.should_not be_nil
   end
 
   it "should find new transactions" do
-    last_transaction_at = FreemiumSubscription.maximum(:last_transaction_at)
-    method_args = FreemiumSubscription.send(:new_transactions)
+    last_transaction_at = Subscription.maximum(:last_transaction_at)
+    method_args = Subscription.send(:new_transactions)
     method_args[:after].should eql(last_transaction_at)
   end
 
   protected
 
   def create_billable_subscription(options = {})
-    FreemiumSubscription.create!({
-      :subscription_plan => freemium_subscription_plans(:premium),
+    Subscription.create!({
+      :subscription_plan => subscription_plans(:premium),
       :subscribable => User.new(:name => 'a'),
       :paid_through => Date.today - 1,
-      :credit_card => FreemiumCreditCard.sample
+      :credit_card => CreditCard.sample
     }.merge(options))
   end
 end

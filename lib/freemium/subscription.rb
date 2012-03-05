@@ -11,16 +11,16 @@ module Freemium
 
     def self.included(base)
       base.class_eval do
-        belongs_to :subscription_plan, :class_name => "FreemiumSubscriptionPlan"
+        belongs_to :subscription_plan, :class_name => "SubscriptionPlan"
         belongs_to :subscribable, :polymorphic => true
-        belongs_to :credit_card, :dependent => :destroy, :class_name => "FreemiumCreditCard"
-        has_many :coupon_redemptions, :conditions => "freemium_coupon_redemptions.expired_on IS NULL", :class_name => "FreemiumCouponRedemption", :foreign_key => :subscription_id, :dependent => :destroy
-        has_many :coupons, :through => :coupon_redemptions, :conditions => "freemium_coupon_redemptions.expired_on IS NULL"
+        belongs_to :credit_card, :dependent => :destroy, :class_name => "CreditCard"
+        has_many :coupon_redemptions, :conditions => "coupon_redemptions.expired_on IS NULL", :class_name => "CouponRedemption", :foreign_key => :subscription_id, :dependent => :destroy
+        has_many :coupons, :through => :coupon_redemptions, :conditions => "coupon_redemptions.expired_on IS NULL"
 
         # Auditing
-        has_many :transactions, :class_name => "FreemiumTransaction", :foreign_key => :subscription_id
+        has_many :transactions, :class_name => "AccountTransaction", :foreign_key => :subscription_id
 
-        scope :paid, includes(:subscription_plan).where("freemium_subscription_plans.rate_cents > 0")
+        scope :paid, includes(:subscription_plan).where("subscription_plans.rate_cents > 0")
         scope :due, lambda {
           where(['paid_through <= ?', Date.today]) # could use the concept of a next retry date
         }
@@ -53,7 +53,7 @@ module Freemium
     end
 
     def original_plan
-      @original_plan ||= FreemiumSubscriptionPlan.find_by_id(subscription_plan_id_was) unless subscription_plan_id_was.nil?
+      @original_plan ||= ::SubscriptionPlan.find_by_id(subscription_plan_id_was) unless subscription_plan_id_was.nil?
     end
 
     def gateway
@@ -153,7 +153,7 @@ module Freemium
     ##
 
     def audit_create
-      FreemiumSubscriptionChange.create(:reason => "new",
+      ::SubscriptionChange.create(:reason => "new",
                                         :subscribable => self.subscribable,
                                         :new_subscription_plan_id => self.subscription_plan_id,
                                         :new_rate => self.rate,
@@ -164,7 +164,7 @@ module Freemium
       if self.subscription_plan_id_changed?
         return if self.original_plan.nil?
         reason = self.original_plan.rate > self.subscription_plan.rate ? (self.expired? ? "expiration" : "downgrade") : "upgrade"
-        FreemiumSubscriptionChange.create(:reason => reason,
+        ::SubscriptionChange.create(:reason => reason,
                                           :subscribable => self.subscribable,
                                           :original_subscription_plan_id => self.original_plan.id,
                                           :original_rate => self.rate(:plan => self.original_plan),
@@ -174,7 +174,7 @@ module Freemium
     end
 
     def audit_destroy
-      FreemiumSubscriptionChange.create(:reason => "cancellation",
+      ::SubscriptionChange.create(:reason => "cancellation",
                                         :subscribable => self.subscribable,
                                         :original_subscription_plan_id => self.subscription_plan_id,
                                         :original_rate => self.rate,
@@ -223,16 +223,16 @@ module Freemium
 
     def coupon_key=(coupon_key)
       @coupon_key = coupon_key ? coupon_key.downcase : nil
-      self.coupon = FreemiumCoupon.find_by_redemption_key(@coupon_key) unless @coupon_key.blank?
+      self.coupon = ::Coupon.find_by_redemption_key(@coupon_key) unless @coupon_key.blank?
     end
 
     def coupon_exist
-      self.errors.add :coupon, "could not be found for '#{@coupon_key}'" if !@coupon_key.blank? && FreemiumCoupon.find_by_redemption_key(@coupon_key).nil?
+      self.errors.add :coupon, "could not be found for '#{@coupon_key}'" if !@coupon_key.blank? && ::Coupon.find_by_redemption_key(@coupon_key).nil?
     end
 
     def coupon=(coupon)
       if coupon
-        s = FreemiumCouponRedemption.new(:subscription => self, :coupon => coupon)
+        s = ::CouponRedemption.new(:subscription => self, :coupon => coupon)
         coupon_redemptions << s
       end
     end

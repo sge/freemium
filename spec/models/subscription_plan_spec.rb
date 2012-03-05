@@ -1,14 +1,14 @@
 require 'spec_helper'
 
-describe FreemiumSubscriptionPlan do
-  fixtures :users, :freemium_subscriptions, :freemium_subscription_plans, :freemium_credit_cards
+describe SubscriptionPlan do
+  fixtures :users, :subscriptions, :subscription_plans, :credit_cards
 
   it "should have associations" do
-    [freemium_subscriptions(:bobs_subscription)].should == (freemium_subscription_plans(:basic).subscriptions)
+    [subscriptions(:bobs_subscription)].should == (subscription_plans(:basic).subscriptions)
   end
 
   it "should have rate intervals" do
-    plan = FreemiumSubscriptionPlan.new(:rate_cents => 3041)
+    plan = SubscriptionPlan.new(:rate_cents => 3041)
     plan.daily_rate.should eql(Money.new(99))
     plan.monthly_rate.should eql(Money.new(3041))
     plan.yearly_rate.should eql(Money.new(36492))
@@ -28,13 +28,13 @@ describe FreemiumSubscriptionPlan do
   end
 
   it "should have ads" do
-    freemium_subscription_plans(:free).features.ads?.should_not be_nil
+    subscription_plans(:free).features.ads?.should_not be_nil
   end
 
   protected
 
   def create_plan(options = {})
-    FreemiumSubscriptionPlan.create({
+    SubscriptionPlan.create({
       :name => 'super-duper-ultra-premium',
       :redemption_key => 'super-duper-ultra-premium',
       :rate_cents => 99995,

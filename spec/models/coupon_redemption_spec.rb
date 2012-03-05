@@ -1,12 +1,12 @@
 require 'spec_helper'
 
-describe FreemiumCouponRedemption do
-  fixtures :users, :freemium_subscriptions, :freemium_subscription_plans, :freemium_credit_cards
+describe CouponRedemption do
+  fixtures :users, :subscriptions, :subscription_plans, :credit_cards
 
   before(:each) do
-    @subscription = freemium_subscriptions(:bobs_subscription)
+    @subscription = subscriptions(:bobs_subscription)
     @original_price = @subscription.rate
-    @coupon = FreemiumCoupon.create(:description => "30% off", :discount_percentage => 30, :redemption_key => "30OFF")
+    @coupon = Coupon.create(:description => "30% off", :discount_percentage => 30, :redemption_key => "30OFF")
   end
 
   it "should be applied" do
@@ -22,7 +22,7 @@ describe FreemiumCouponRedemption do
   end
 
   it "should be applied using coupon accessor" do
-    @subscription = build_subscription(:coupon => @coupon, :credit_card => FreemiumCreditCard.sample)
+    @subscription = build_subscription(:coupon => @coupon, :credit_card => CreditCard.sample)
     @subscription.save!
 
     @subscription.coupon.should_not be_nil
@@ -33,7 +33,7 @@ describe FreemiumCouponRedemption do
   end
 
   it "should be applied using coupon key accessor" do
-    @subscription = build_subscription(:coupon_key => @coupon.redemption_key, :credit_card => FreemiumCreditCard.sample)
+    @subscription = build_subscription(:coupon_key => @coupon.redemption_key, :credit_card => CreditCard.sample)
     @subscription.save!
 
     @subscription.coupon.should_not be_nil
@@ -44,13 +44,13 @@ describe FreemiumCouponRedemption do
   end
 
   it "should be applied multiple" do
-    @coupon_1 = FreemiumCoupon.new(:description => "10% off", :discount_percentage => 10)
+    @coupon_1 = Coupon.new(:description => "10% off", :discount_percentage => 10)
     @subscription.coupon_redemptions.create(:coupon => @coupon_1).should be_true
 
-    @coupon_2 = FreemiumCoupon.new(:description => "30% off", :discount_percentage => 30)
+    @coupon_2 = Coupon.new(:description => "30% off", :discount_percentage => 30)
     @subscription.coupon_redemptions.create(:coupon => @coupon_2).should be_true
 
-    @coupon_3 = FreemiumCoupon.new(:description => "20% off", :discount_percentage => 20)
+    @coupon_3 = Coupon.new(:description => "20% off", :discount_percentage => 20)
     @subscription.coupon_redemptions.create(:coupon => @coupon_3).should be_true
 
     # Should use the highest discounted coupon
@@ -94,7 +94,7 @@ describe FreemiumCouponRedemption do
   it "should be applied complimentary" do
     @coupon.discount_percentage = 100
 
-    @subscription = build_subscription(:coupon => @coupon, :credit_card => FreemiumCreditCard.sample, :subscription_plan => freemium_subscription_plans(:premium))
+    @subscription = build_subscription(:coupon => @coupon, :credit_card => CreditCard.sample, :subscription_plan => subscription_plans(:premium))
 
     @subscription.save.should be_true
     @subscription.coupon.should_not be_nil
@@ -109,14 +109,14 @@ describe FreemiumCouponRedemption do
   it "should be applied only on new premium plan" do
     set_coupon_to_premium_only
 
-    @subscription = build_subscription(:coupon => @coupon, :credit_card => FreemiumCreditCard.sample,
-                                       :subscription_plan => freemium_subscription_plans(:premium))
+    @subscription = build_subscription(:coupon => @coupon, :credit_card => CreditCard.sample,
+                                       :subscription_plan => subscription_plans(:premium))
 
     @subscription.save.should be_true
     @subscription.coupon.should_not be_nil
 
-    @subscription = build_subscription(:coupon => @coupon, :credit_card => FreemiumCreditCard.sample,
-                                       :subscription_plan => freemium_subscription_plans(:basic))
+    @subscription = build_subscription(:coupon => @coupon, :credit_card => CreditCard.sample,
+                                       :subscription_plan => subscription_plans(:basic))
 
     @subscription.save.should be_false
     @subscription.should have(1).errors_on(:coupon_redemptions)
@@ -127,13 +127,13 @@ describe FreemiumCouponRedemption do
 
     @subscription.coupon = @coupon
 
-    @subscription.subscription_plan.should eql(freemium_subscription_plans(:basic))
+    @subscription.subscription_plan.should eql(subscription_plans(:basic))
     @subscription.save.should be_false
     @subscription.should have(1).errors_on(:coupon_redemptions)
 
-    @subscription.subscription_plan = freemium_subscription_plans(:premium)
+    @subscription.subscription_plan = subscription_plans(:premium)
 
-    @subscription.subscription_plan.should eql(freemium_subscription_plans(:premium))
+    @subscription.subscription_plan.should eql(subscription_plans(:premium))
     @subscription.save.should be_true
     @subscription.coupon.should_not be_nil
   end
@@ -159,7 +159,7 @@ describe FreemiumCouponRedemption do
   it "should validate coupon by coupon plan" do
     set_coupon_to_premium_only
 
-    @subscription.subscription_plan.should_not eql(freemium_subscription_plans(:premium))
+    @subscription.subscription_plan.should_not eql(subscription_plans(:premium))
 
     @subscription.coupon = @coupon
     @subscription.should_not be_valid
@@ -169,7 +169,7 @@ describe FreemiumCouponRedemption do
   protected
 
   def set_coupon_to_premium_only
-    @coupon.subscription_plans << freemium_subscription_plans(:premium)
+    @coupon.subscription_plans << subscription_plans(:premium)
     @coupon.save!
   end
 
@@ -181,23 +181,23 @@ describe FreemiumCouponRedemption do
   ##
 
   it "should validate coupon" do
-    s = FreemiumCouponRedemption.new(:subscription => freemium_subscriptions(:bobs_subscription))
+    s = CouponRedemption.new(:subscription => subscriptions(:bobs_subscription))
     s.save.should be_false
     s.should have(1).errors_on(:coupon)
   end
 
   it "should not be applied to unpaid subscription" do
-    freemium_subscriptions(:sues_subscription).paid?.should be_false
-    s = FreemiumCouponRedemption.new(:subscription => freemium_subscriptions(:sues_subscription), :coupon => @coupon)
+    subscriptions(:sues_subscription).paid?.should be_false
+    s = CouponRedemption.new(:subscription => subscriptions(:sues_subscription), :coupon => @coupon)
     s.save.should be_false
     s.should have(1).errors_on(:subscription)
   end
 
   it "should not be applied twice" do
-    s = FreemiumCouponRedemption.new(:subscription => freemium_subscriptions(:bobs_subscription), :coupon => @coupon)
+    s = CouponRedemption.new(:subscription => subscriptions(:bobs_subscription), :coupon => @coupon)
     s.save.should be_true
 
-    s = FreemiumCouponRedemption.new(:subscription => freemium_subscriptions(:bobs_subscription), :coupon => @coupon)
+    s = CouponRedemption.new(:subscription => subscriptions(:bobs_subscription), :coupon => @coupon)
     s.save.should be_false
     s.should have(1).errors_on(:coupon_id)
   end
@@ -206,7 +206,7 @@ describe FreemiumCouponRedemption do
     @coupon.redemption_expiration = Date.today-1
     @coupon.save!
 
-    s = FreemiumCouponRedemption.new(:subscription => freemium_subscriptions(:bobs_subscription), :coupon => @coupon)
+    s = CouponRedemption.new(:subscription => subscriptions(:bobs_subscription), :coupon => @coupon)
     s.save.should be_false
     s.should have(1).errors_on(:coupon)
   end
@@ -215,10 +215,10 @@ describe FreemiumCouponRedemption do
     @coupon.redemption_limit = 1
     @coupon.save!
 
-    s = FreemiumCouponRedemption.new(:subscription => freemium_subscriptions(:bobs_subscription), :coupon => @coupon)
+    s = CouponRedemption.new(:subscription => subscriptions(:bobs_subscription), :coupon => @coupon)
     s.save!
 
-    s = FreemiumCouponRedemption.new(:subscription => freemium_subscriptions(:steves_subscription), :coupon => @coupon)
+    s = CouponRedemption.new(:subscription => subscriptions(:steves_subscription), :coupon => @coupon)
     s.save.should be_false
     s.should have(1).errors_on(:coupon)
   end
@@ -226,8 +226,8 @@ describe FreemiumCouponRedemption do
   protected
 
   def build_subscription(options = {})
-    FreemiumSubscription.new({
-      :subscription_plan => freemium_subscription_plans(:basic),
+    Subscription.new({
+      :subscription_plan => subscription_plans(:basic),
       :subscribable => users(:sue)
     }.merge(options))
   end

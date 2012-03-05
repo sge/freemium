@@ -38,7 +38,7 @@ module Freemium
       def process_transactions(transactions = new_transactions)
         transaction do
           transactions.each do |t|
-            subscription = FreemiumSubscription.find_by_billing_key(t.billing_key)
+            subscription = ::Subscription.find_by_billing_key(t.billing_key)
             subscription.transactions << t
             t.success? ? subscription.receive_payment!(t) : subscription.expire_after_grace!(t)
           end
