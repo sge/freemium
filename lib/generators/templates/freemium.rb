@@ -18,7 +18,7 @@ Freemium.gateway.password = "password"
 Freemium.billing_handler = :manual
 
 # the class name of mailer used to send out emails to subscriber
-Freemium.mailer = FreemiumMailer
+Freemium.mailer = SubscriptionMailer
 
 # uncomment to be cc'ed on all freemium emails that go out to the user
 #Freemium.admin_report_recipients = %w{admin@site.com}
@@ -33,11 +33,11 @@ Freemium.days_free_trial = 30
 
 ##### See vendor/plugins/freemium/freemium.rb for additional choices
 
-if RAILS_ENV == 'production'
+if Rails.env == 'production'
   # put your production password information here....
   Freemium.gateway.username = "demo"
   Freemium.gateway.password = "password"
-elsif RAILS_ENV == 'test'
+elsif Rails.env == 'test'
   # prevents you from calling BrainTree during your tests
   Freemium.gateway = Freemium::Gateways::Test.new
 end
