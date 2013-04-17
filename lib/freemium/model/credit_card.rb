@@ -28,8 +28,6 @@ module Freemium
         # run validation on the passed in value if it is supplied
         attr_accessor :verification_value
 
-        attr_accessible :number, :month, :year, :first_name, :last_name, :start_month, :start_year, :issue_number, :verification_value, :card_type, :zip_code
-
         has_one :subscription, :class_name => "Subscription"
 
         before_validation :sanitize_data, :if => :changed?

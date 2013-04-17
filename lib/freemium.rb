@@ -1,24 +1,25 @@
-require 'rails'
+# require 'rails'
+require 'active_support/core_ext/module/attribute_accessors'
 
 require 'money'
 require "freemium/version"
-require 'freemium/address'
-require 'freemium/coupon'
-require 'freemium/coupon_redemption'
-require 'freemium/credit_card'
-require 'freemium/feature_set'
+require 'freemium/model/address'
+require 'freemium/model/coupon'
+require 'freemium/model/coupon_redemption'
+require 'freemium/model/credit_card'
+require 'freemium/model/feature_set'
 require 'freemium/manual_billing'
 require 'freemium/rates'
 require 'freemium/recurring_billing'
 require 'freemium/response'
-require 'freemium/subscription'
-require 'freemium/subscription_change'
-require 'freemium/subscription_plan'
-require 'freemium/transaction'
+require 'freemium/model/subscription'
+require 'freemium/model/subscription_change'
+require 'freemium/model/subscription_plan'
+require 'freemium/model/transaction'
 require 'freemium/gateways/base'
 require 'freemium/gateways/brain_tree'
 require 'freemium/gateways/test'
-require 'freemium/subscription_mailer'
+# require 'freemium/subscription_mailer'
 
 module Freemium
   class CreditCardStorageError < RuntimeError; end
@@ -26,8 +27,8 @@ module Freemium
   # Lets you configure which ActionMailer class contains appropriate
   # mailings for invoices, expiration warnings, and expiration notices.
   # You'll probably want to create your own, based on lib/subscription_mailer.rb.
-  mattr_accessor :mailer
-  @@mailer = SubscriptionMailer
+  attr_accessor :mailer
+  @@mailer = nil # SubscriptionMailer
 
   # The gateway of choice. Default gateway is a stubbed testing gateway.
   mattr_accessor :gateway

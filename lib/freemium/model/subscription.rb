@@ -14,19 +14,16 @@ module Freemium
         belongs_to :subscription_plan, :class_name => "SubscriptionPlan"
         belongs_to :subscribable, :polymorphic => true
         belongs_to :credit_card, :dependent => :destroy, :class_name => "CreditCard"
-        has_many :coupon_redemptions, :conditions => "coupon_redemptions.expired_on IS NULL", :class_name => "CouponRedemption", :foreign_key => :subscription_id, :dependent => :destroy
-        has_many :coupons, :through => :coupon_redemptions, :conditions => "coupon_redemptions.expired_on IS NULL"
+
+        has_many :coupon_redemptions, -> { where expired_on: nil }, class_name: 'CouponRedemption', foreign_key: :subscription_id, dependent: :destroy
+        has_many :coupons, -> { where expired_on: nil }, through: :coupon_redemptions
 
         # Auditing
         has_many :transactions, :class_name => "AccountTransaction", :foreign_key => :subscription_id
 
-        scope :paid, includes(:subscription_plan).where("subscription_plans.rate_cents > 0")
-        scope :due, lambda {
-          where(['paid_through <= ?', Date.today]) # could use the concept of a next retry date
-        }
-        scope :expired, lambda {
-          where(['expire_on >= paid_through AND expire_on <= ?', Date.today])
-        }
+        scope :paid,    -> { includes(:subscription_plan).where("subscription_plans.rate_cents > 0") }
+        scope :due,     -> { where(['paid_through <= ?', Date.today]) } # could use the concept of a next retry date
+        scope :expired, -> { where(['expire_on >= paid_through AND expire_on <= ?', Date.today]) }
 
         before_validation :set_paid_through
         before_validation :set_started_on
